@@ -28,7 +28,14 @@ mongoose.connect(process.env.CONNECTION_URL)
       
       const io = new Server(server, {
         pingTimeout: 60000,
-        cors: { origin: "http://localhost:3000" },
+        cors: {
+          // 🛑 CRITICAL FIX: Allow your Netlify App here
+          origin: [
+              "http://localhost:3000", 
+              "https://idea-flux.netlify.app", 
+              "https://www.idea-flux.netlify.app"
+          ],
+        },
       });
 
       io.on("connection", (socket) => {
@@ -50,10 +57,10 @@ mongoose.connect(process.env.CONNECTION_URL)
           chat.users.forEach((user) => {
             if (user._id == newMessageRecieved.sender._id) return;
             
-            // 1. Send to Chat Window
+            // Send to Chat Window
             socket.in(user._id).emit("message received", newMessageRecieved);
             
-            // 2. 🛑 FIX: Send to Notification Bell
+            // Send to Notification Bell
             socket.in(user._id).emit("notification received", {
                 user: user._id,
                 sender: newMessageRecieved.sender,
