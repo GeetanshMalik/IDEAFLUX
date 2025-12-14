@@ -3,10 +3,11 @@ import { Box, TextField, IconButton, Typography, Avatar, CircularProgress, Toolt
 import SendIcon from "@mui/icons-material/Send";
 import AttachFileIcon from "@mui/icons-material/AttachFile"; 
 import CloseIcon from "@mui/icons-material/Close";
-import MoreVertIcon from "@mui/icons-material/MoreVert"; // Menu for Delete Chat
+import MoreVertIcon from "@mui/icons-material/MoreVert"; 
 import FileBase from 'react-file-base64'; 
 import * as api from "../../api";
 import ChatMessage from "./ChatMessage";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
   const [messages, setMessages] = useState([]);
@@ -18,6 +19,7 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
   // Menu State
   const [anchorEl, setAnchorEl] = useState(null);
 
+  // 1. Fetch Previous Messages
   useEffect(() => {
     if (!selectedChat) return;
     const fetchMessages = async () => {
@@ -25,7 +27,11 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
       try {
         const { data } = await api.fetchMessages(selectedChat._id);
         setMessages(data);
-        socket.emit("join chat", selectedChat._id);
+        
+        // Join the room
+        if (socket) {
+            socket.emit("join chat", selectedChat._id);
+        }
       } catch (error) {
         console.log(error);
       }
@@ -34,14 +40,26 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
     fetchMessages();
   }, [selectedChat, socket]);
 
+  // 2. 🛑 FIX: Real-time Listener (Robust Version)
   useEffect(() => {
-    socket.on("message received", (newMessageReceived) => {
-      if (selectedChat._id === newMessageReceived.chat._id) {
-        setMessages([...messages, newMessageReceived]);
-      }
-    });
-  });
+    if (!socket) return;
 
+    const handleMessageReceived = (newMessageReceived) => {
+      // Only update if the message belongs to THIS open chat
+      if (selectedChat && selectedChat._id === newMessageReceived.chat._id) {
+         setMessages((prevMessages) => [...prevMessages, newMessageReceived]);
+      }
+    };
+
+    socket.on("message received", handleMessageReceived);
+
+    // Cleanup to prevent double messages
+    return () => {
+      socket.off("message received", handleMessageReceived);
+    };
+  }, [socket, selectedChat]); // Runs whenever socket or chat changes
+
+  // 3. Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -61,7 +79,11 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
         setMediaFile(null); 
 
         const { data } = await api.sendMessage(messageData);
-        socket.emit("new message", data);
+        
+        // Emit to socket immediately
+        if (socket) {
+            socket.emit("new message", data);
+        }
         setMessages([...messages, data]);
       } catch (error) {
         console.log(error);
@@ -69,17 +91,15 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
     }
   };
 
-  // 🛑 DELETE MESSAGE LOGIC
   const handleDeleteMessageUI = (id) => {
       setMessages(messages.filter(m => m._id !== id));
   };
 
-  // 🛑 DELETE CHAT LOGIC
   const handleDeleteChat = async () => {
       if(window.confirm("Delete entire conversation? This cannot be undone.")) {
           try {
               await api.deleteChat(selectedChat._id);
-              window.location.reload(); // Quick refresh to clear state
+              window.location.reload(); 
           } catch (error) {
               console.log(error);
           }
@@ -94,13 +114,15 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
       {/* Header */}
       <Box className="chat-header" sx={{ justifyContent: 'space-between' }}>
         <Box display="flex" alignItems="center">
+            <IconButton onClick={onBack} sx={{ display: { md: "none" }, color: 'white', mr: 1 }}>
+                <ArrowBackIcon />
+            </IconButton>
             <Avatar src={otherUser?.picture} alt={otherUser?.name} />
             <Typography variant="h6" style={{ marginLeft: "10px", fontWeight: 'bold' }}>
             {otherUser?.name}
             </Typography>
         </Box>
         
-        {/* Chat Options Menu */}
         <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ color: 'white' }}>
             <MoreVertIcon />
         </IconButton>
@@ -123,7 +145,7 @@ const ChatWindow = ({ selectedChat, socket, user, onBack }) => {
                key={i} 
                message={m} 
                isOwnMessage={m.sender._id === user.result._id} 
-               onDelete={handleDeleteMessageUI} // Pass delete handler
+               onDelete={handleDeleteMessageUI} 
             />
           ))
         )}
