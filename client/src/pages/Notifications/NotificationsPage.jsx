@@ -6,7 +6,7 @@ import * as api from "../../api";
 import Notifications from "./Notifications";
 import io from 'socket.io-client';
 
-// Point this to your Render Server URL
+// 🛑 IMPORTANT: Make sure this matches your Render URL exactly
 const ENDPOINT = "https://ideaflux-54zk.onrender.com";
 
 const NotificationsPage = () => {
@@ -32,7 +32,11 @@ const NotificationsPage = () => {
   // 2. Real-time Listener
   useEffect(() => {
     const socket = io(ENDPOINT);
-    socket.emit("setup", user?.result);
+    
+    // 🛑 CRITICAL FIX: Send ONLY the ID to prevent 413 Error
+    if (user?.result?._id) {
+        socket.emit("setup", { _id: user.result._id });
+    }
     
     socket.on("notification received", (newNotif) => {
         setNotifications((prev) => [newNotif, ...prev]);
