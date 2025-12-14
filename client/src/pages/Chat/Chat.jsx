@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Container, Grid, Paper, Box, Typography } from "@mui/material";
+import { Container, Paper, Box, Typography } from "@mui/material";
 import io from "socket.io-client";
 
 import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
-import * as api from "../../api"; 
 import "./chat.css";
 
-const ENDPOINT = "http://localhost:5000";
+//Point this to your Render Server URL
+const ENDPOINT = "https://ideaflux-54zk.onrender.com"; 
 var socket;
 
 const Chat = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem("profile")));
+  const [user] = useState(JSON.parse(localStorage.getItem("profile")));
   const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
@@ -23,9 +23,8 @@ const Chat = () => {
     return () => socket.disconnect();
   }, [user]);
 
-  // AUTO-SELECT LOGIC
+  // Auto-select first chat
   useEffect(() => {
-    // If we have chats, but none selected, select the first one (Most recent)
     if (chats.length > 0 && !selectedChat) {
         setSelectedChat(chats[0]);
     }
@@ -34,7 +33,6 @@ const Chat = () => {
   return (
     <Container maxWidth="xl" className="chat-container">
       <Paper elevation={4} className="chat-paper">
-        {/* We use CSS flex layout now instead of Grid for better scroll control */}
         
         {/* SIDEBAR */}
         <Box className={`chat-sidebar ${selectedChat ? "hidden-mobile" : ""}`}>
