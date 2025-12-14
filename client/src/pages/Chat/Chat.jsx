@@ -6,27 +6,31 @@ import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import "./chat.css";
 
-// 🛑 IMPORTANT: Make sure this matches your Render URL exactly
+// 🛑 Ensure this matches your Render URL
 const ENDPOINT = "https://ideaflux-54zk.onrender.com"; 
-var socket;
 
 const Chat = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
   const [user] = useState(JSON.parse(localStorage.getItem("profile")));
-  const [socketConnected, setSocketConnected] = useState(false);
+  
+  // 🛑 FIX: Store socket in State so React tracks it
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    socket = io(ENDPOINT);
+    // 1. Initialize Socket
+    const newSocket = io(ENDPOINT);
     
-    // 🛑 CRITICAL FIX: Send ONLY the ID, not the full profile with the image
-    // This prevents the "413 Content Too Large" error
+    // 2. Setup (Send only ID)
     if (user?.result?._id) {
-        socket.emit("setup", { _id: user.result._id });
+        newSocket.emit("setup", { _id: user.result._id });
     }
     
-    socket.on("connected", () => setSocketConnected(true));
-    return () => socket.disconnect();
+    // 3. Save to State (Triggers re-render for children)
+    setSocket(newSocket);
+
+    // 4. Cleanup
+    return () => newSocket.disconnect();
   }, [user]);
 
   // Auto-select first chat
@@ -56,7 +60,7 @@ const Chat = () => {
             {selectedChat ? (
               <ChatWindow 
                 selectedChat={selectedChat} 
-                socket={socket} 
+                socket={socket} // Now passing the STATE variable
                 user={user}
                 onBack={() => setSelectedChat(null)} 
               />
