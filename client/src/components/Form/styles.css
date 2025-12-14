@@ -1,0 +1,65 @@
+/* --- DARK MODE OVERRIDES FOR QUILL EDITOR --- */
+
+/* 1. The Toolbar (Top Part) */
+.ql-toolbar.ql-snow {
+    background-color: #1e293b; /* Card Background */
+    border-color: #334155 !important;
+    border-radius: 8px 8px 0 0;
+}
+
+/* 2. The Editing Area (Bottom Part) */
+.ql-container.ql-snow {
+    background-color: #1e293b;
+    border-color: #334155 !important;
+    border-radius: 0 0 8px 8px;
+    color: #94a3b8; /* Text Color */
+    font-family: 'Roboto', sans-serif;
+    min-height: 200px;
+}
+
+/* 3. Icons in Toolbar (Stroke) */
+.ql-snow .ql-stroke {
+    stroke: #94a3b8 !important;
+}
+
+/* 4. Icons in Toolbar (Fill) */
+.ql-snow .ql-fill {
+    fill: #94a3b8 !important;
+}
+
+/* 5. Dropdown Text Color (Font/Size pickers) */
+.ql-snow .ql-picker {
+    color: #94a3b8 !important;
+}
+
+/* 6. Dropdown Options Background */
+.ql-snow .ql-picker-options {
+    background-color: #0f172a !important; /* Darker Navy */
+    border-color: #334155 !important;
+    color: #94a3b8 !important;
+}
+
+/* 7. Hover Effects on Icons */
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button:focus .ql-stroke {
+    stroke: #14b8a6 !important; /* Teal Highlight */
+}
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button:focus .ql-fill {
+    fill: #14b8a6 !important; /* Teal Highlight */
+}
+
+/* 8. Link Tooltip Input */
+.ql-snow .ql-tooltip {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #fff !important;
+}
+.ql-snow .ql-tooltip input[type=text] {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: white;
+}
+.ql-editor[contenteditable=true][data-placeholder]::before {
+  color: #ffffff !important;
+}

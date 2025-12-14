@@ -1,0 +1,122 @@
+/* --- 1. MAIN LAYOUT --- */
+.chat-container {
+    /* Fixed height relative to viewport minus Navbar height (approx 80px) */
+    height: calc(100vh - 100px); 
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    overflow: hidden; /* Prevents page scroll */
+}
+
+.chat-paper {
+    width: 100%;
+    height: 100%;
+    display: flex; /* Creates the Side-by-Side layout */
+    border-radius: 16px !important;
+    overflow: hidden; /* Clips children */
+    border: 1px solid #334155; 
+    background-color: #0f172a; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+}
+
+/* --- 2. SIDEBAR (Contacts) --- */
+.chat-sidebar {
+    width: 340px;
+    height: 100%; /* Full height of parent */
+    background-color: #1e293b; 
+    border-right: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    height: 75px;
+    flex-shrink: 0; /* Header stays fixed */
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    border-bottom: 1px solid #334155;
+    color: white;
+    background-color: #1e293b;
+}
+
+.chat-list {
+    flex-grow: 1; /* Takes remaining space */
+    overflow-y: auto; /* SCROLLS INDEPENDENTLY */
+    height: 0; /* Flexbox trick to force scroll */
+}
+
+/* Scrollbar for Sidebar */
+.chat-list::-webkit-scrollbar { width: 5px; }
+.chat-list::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 3px; }
+
+/* Item Styles */
+.chat-list-item:hover { background-color: rgba(20, 184, 166, 0.05) !important; cursor: pointer; }
+.chat-list-item.selected { background-color: rgba(20, 184, 166, 0.15) !important; border-right: 4px solid #14b8a6; }
+
+/* --- 3. CHAT WINDOW (Right Side) --- */
+.chat-window {
+    flex-grow: 1;
+    height: 100%; /* Full height */
+    display: flex;
+    flex-direction: column;
+    background-color: #0f172a;
+    background-image: radial-gradient(#1e293b 1px, transparent 1px);
+    background-size: 20px 20px;
+    min-width: 0; /* Prevents flex overflow */
+}
+
+.chat-header {
+    height: 75px;
+    flex-shrink: 0; /* Header stays fixed */
+    padding: 0 24px;
+    background-color: #1e293b;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* --- 4. MESSAGES AREA --- */
+.messages-area {
+    flex-grow: 1;
+    height: 0; /* Flexbox trick to force scroll inside */
+    padding: 20px 30px;
+    overflow-y: auto; /* SCROLLS INDEPENDENTLY */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Scrollbar for Messages */
+.messages-area::-webkit-scrollbar { width: 6px; }
+.messages-area::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 3px; }
+
+/* --- 5. INPUT AREA --- */
+.input-area {
+    padding: 15px 24px;
+    flex-shrink: 0; /* Footer stays fixed */
+    background-color: #1e293b;
+    border-top: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Styles for Text Inputs inside Chat */
+.input-area .MuiOutlinedInput-root { background-color: #0f172a; border-radius: 24px; color: white; }
+.input-area .MuiOutlinedInput-notchedOutline { border-color: #334155; }
+
+/* Message Bubble Styles (Keep these) */
+.message-wrapper { display: flex; width: 100%; margin-bottom: 4px; }
+.message-wrapper.own { justify-content: flex-end; }
+.message-wrapper.other { justify-content: flex-start; }
+.message-bubble { max-width: 65%; padding: 10px 16px; position: relative; font-size: 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.2); word-wrap: break-word; }
+.message-bubble.own { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); color: white; border-radius: 18px 18px 0 18px; }
+.message-bubble.other { background-color: #334155; color: #f1f5f9; border-radius: 18px 18px 18px 0; }
+.message-time { font-size: 0.7rem; margin-top: 4px; text-align: right; display: block; opacity: 0.7; }
+.message-media { border-radius: 8px; margin-top: 8px; max-width: 100%; max-height: 300px; object-fit: cover; }
+.message-file { display: flex; alignItems: center; gap: 10px; background-color: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px; margin-top: 5px; text-decoration: none; }
