@@ -3,17 +3,18 @@ import { Container, Paper, Typography, List, Box, IconButton, Divider, CircularP
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import * as api from "../../api";
-import Notifications from "./Notifications"; // Imports the file above
+import Notifications from "./Notifications";
 import io from 'socket.io-client';
 
-const ENDPOINT = "http://localhost:5000";
+// Point this to your Render Server URL
+const ENDPOINT = "https://ideaflux-54zk.onrender.com";
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('profile'));
 
-  // 1. Fetch Initial
+  // 1. Fetch Initial (Persistent)
   const getNotifs = async () => {
     try {
       const { data } = await api.fetchNotifications();
