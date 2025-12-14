@@ -6,7 +6,7 @@ import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import "./chat.css";
 
-//Point this to your Render Server URL
+// 🛑 IMPORTANT: Make sure this matches your Render URL exactly
 const ENDPOINT = "https://ideaflux-54zk.onrender.com"; 
 var socket;
 
@@ -18,7 +18,13 @@ const Chat = () => {
 
   useEffect(() => {
     socket = io(ENDPOINT);
-    socket.emit("setup", user?.result);
+    
+    // 🛑 CRITICAL FIX: Send ONLY the ID, not the full profile with the image
+    // This prevents the "413 Content Too Large" error
+    if (user?.result?._id) {
+        socket.emit("setup", { _id: user.result._id });
+    }
+    
     socket.on("connected", () => setSocketConnected(true));
     return () => socket.disconnect();
   }, [user]);
