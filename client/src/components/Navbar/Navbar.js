@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Avatar, Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { AppBar, Avatar, Button, Toolbar, Typography, Box, IconButton, Badge, Menu, MenuItem, InputBase, Snackbar, Alert } from '@mui/material';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; // Updated import for v4+
+import * as actionType from '../../constants/actionTypes';
+import useStyles from './styles'; // If you use CSS file, otherwise standard MUI styling below
+import io from 'socket.io-client';
+import * as api from '../../api';
 
 // Icons
-import ExploreIcon from '@mui/icons-material/Explore';
-import CreateIcon from '@mui/icons-material/AddCircleOutline'; // Changed to AddCircle for "Create" look
 import SearchIcon from '@mui/icons-material/Search';
-import NotificationsIcon from '@mui/icons-material/NotificationsNone';
-import ChatIcon from '@mui/icons-material/ChatBubbleOutline';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 
-import * as actionType from '../../constants/actionTypes';
+// Render URL
+const ENDPOINT = "https://ideaflux-54zk.onrender.com";
 
 const Navbar = () => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('profile')));
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [anchorEl, setAnchorEl] = useState(null);
   
-  // Active route state for styling
-  const isActive = (path) => location.pathname === path;
+  // Search State
+  const [search, setSearch] = useState('');
+
+  // 🔔 Notification States
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
 
   const logout = () => {
     dispatch({ type: actionType.LOGOUT });
@@ -29,6 +40,7 @@ const Navbar = () => {
     setUser(null);
   };
 
+  // 1. Check Token Expiry
   useEffect(() => {
     const token = user?.token;
     if (token) {
@@ -38,99 +50,141 @@ const Navbar = () => {
     setUser(JSON.parse(localStorage.getItem('profile')));
   }, [location]);
 
-  // Common Icon Style
-  const iconStyle = (path) => ({
-      color: isActive(path) ? '#14b8a6' : '#94a3b8', // Teal if active, Grey if not
-      fontSize: 28,
-      '&:hover': { color: '#14b8a6' }
-  });
+  // 2. 🔔 Real-Time Notifications Logic
+  useEffect(() => {
+    if (!user) return;
+
+    // A. Fetch Initial Unread Count
+    const fetchUnreadCount = async () => {
+        try {
+            const { data } = await api.fetchNotifications();
+            // Count only unread
+            const unread = data.filter((n) => !n.read).length;
+            setNotificationCount(unread);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+    fetchUnreadCount();
+
+    // B. Setup Socket Listener
+    const socket = io(ENDPOINT);
+    
+    // Setup connection
+    if (user?.result?._id) {
+        socket.emit("setup", { _id: user.result._id });
+    }
+
+    // Listen for new notifications
+    socket.on("notification received", (newNotif) => {
+        // Increment Badge
+        setNotificationCount((prev) => prev + 1);
+        
+        // Show Popup
+        setSnackbarMsg(`New message from ${newNotif.sender.name}`);
+        setOpenSnackbar(true);
+    });
+
+    return () => socket.disconnect();
+  }, [user]);
+
+  const handleMenu = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+  const handleSnackbarClose = () => setOpenSnackbar(false);
+
+  const handleSearchKeyPress = (e) => {
+    if(e.keyCode === 13) {
+        // Navigate to search page
+        if(search.trim()) {
+            // dispatch(getPostsBySearch({ search })); // Optional if you want to trigger redux
+            navigate(`/posts/search?searchQuery=${search || 'none'}`);
+        }
+    }
+  };
 
   return (
-    <AppBar position="sticky" sx={{ bgcolor: '#0f172a', borderBottom: '1px solid #1e293b' }} elevation={0}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', minHeight: '70px' }}>
+    <AppBar position="static" color="inherit" sx={{ bgcolor: '#0f172a', borderBottom: '1px solid #1e293b' }}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
         
-        {/* --- EXTREME LEFT: LOGO --- */}
-        <Box display="flex" alignItems="center" sx={{ cursor: 'pointer', minWidth: '150px' }} onClick={() => navigate('/explore')}>
-             <Box sx={{ bgcolor: '#14b8a6', borderRadius: '8px', width: 35, height: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 1.5 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>IF</Typography>
-             </Box>
-             <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', letterSpacing: 1, display: { xs: 'none', sm: 'block' } }}>
-                 IDEAFLUX
-             </Typography>
+        {/* LOGO */}
+        <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white' }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', mr: 1, color: '#14b8a6' }}>IF</Typography>
+            <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 'bold' }}>IDEAFLUX</Typography>
         </Box>
 
-        {/* --- CENTER: ALL OPTIONS WITH EQUAL DISTANCE --- */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: { xs: 2, md: 5 }, flexGrow: 1 }}>
-            
-            <Tooltip title="Explore">
-                <IconButton component={Link} to="/explore">
-                    <ExploreIcon sx={iconStyle('/explore')} />
-                </IconButton>
-            </Tooltip>
+        {/* SEARCH BAR (Only if logged in) */}
+        {user && (
+            <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#1e293b', borderRadius: '20px', px: 2, py: 0.5, mx: 2, width: { xs: '40%', md: '30%' } }}>
+                <SearchIcon sx={{ color: '#94a3b8' }} />
+                <InputBase 
+                    placeholder="Search..." 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={handleSearchKeyPress}
+                    sx={{ ml: 1, color: 'white', width: '100%' }} 
+                />
+            </Box>
+        )}
 
-            <Tooltip title="Search">
-                <IconButton component={Link} to="/search">
-                    <SearchIcon sx={iconStyle('/search')} />
+        {/* ICONS & PROFILE */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {user ? (
+            <>
+                {/* Create Post */}
+                <IconButton component={Link} to="/posts/create" sx={{ color: '#94a3b8', display: { xs: 'none', md: 'flex' } }}>
+                    <AddCircleOutlineIcon />
                 </IconButton>
-            </Tooltip>
 
-            <Tooltip title="Create Post">
-                <IconButton component={Link} to="/create">
-                    <CreateIcon sx={{ ...iconStyle('/create'), fontSize: 32 }} />
+                {/* Chat */}
+                <IconButton component={Link} to="/chat" sx={{ color: '#94a3b8' }}>
+                    <ChatBubbleOutlineIcon />
                 </IconButton>
-            </Tooltip>
 
-            <Tooltip title="Messages">
-                <IconButton component={Link} to="/chat">
-                    <ChatIcon sx={iconStyle('/chat')} />
+                {/* Notifications with Badge */}
+                <IconButton component={Link} to="/notifications" sx={{ color: '#94a3b8' }}>
+                    <Badge badgeContent={notificationCount} color="error">
+                        <NotificationsNoneIcon />
+                    </Badge>
                 </IconButton>
-            </Tooltip>
 
-            <Tooltip title="Notifications">
-                <IconButton component={Link} to="/notifications">
-                    <NotificationsIcon sx={iconStyle('/notifications')} />
+                {/* Profile Avatar */}
+                <IconButton onClick={handleMenu} sx={{ p: 0, ml: 1 }}>
+                    <Avatar alt={user.result.name} src={user.result.picture} sx={{ width: 35, height: 35 }}>
+                        {user.result.name.charAt(0)}
+                    </Avatar>
                 </IconButton>
-            </Tooltip>
 
-            <Tooltip title="Settings">
-                <IconButton component={Link} to="/settings">
-                    <SettingsIcon sx={iconStyle('/settings')} />
-                </IconButton>
-            </Tooltip>
-
+                {/* Dropdown Menu */}
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleClose}
+                    PaperProps={{ sx: { bgcolor: '#1e293b', color: 'white' } }}
+                >
+                    <MenuItem component={Link} to={`/profile/${user.result._id}`} onClick={handleClose}>Profile</MenuItem>
+                    <MenuItem onClick={logout} sx={{ color: '#ef4444' }}>
+                        <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> Logout
+                    </MenuItem>
+                </Menu>
+            </>
+          ) : (
+            <Button component={Link} to="/auth" variant="contained" sx={{ bgcolor: '#14b8a6' }}>Sign In</Button>
+          )}
         </Box>
-
-        {/* --- EXTREME RIGHT: PROFILE --- */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', minWidth: '150px' }}>
-             {user ? (
-                 <Avatar 
-                    src={user.result.picture} 
-                    alt={user.result.name}
-                    onClick={() => navigate(`/profile/${user.result._id}`)}
-                    sx={{ 
-                        cursor: 'pointer', 
-                        bgcolor: '#14b8a6', 
-                        width: 40, height: 40,
-                        border: isActive(`/profile/${user.result._id}`) ? '2px solid white' : 'none'
-                    }}
-                 >
-                     {user.result.name.charAt(0)}
-                 </Avatar>
-             ) : (
-                 <Box 
-                    component={Link} to="/auth"
-                    sx={{ 
-                        bgcolor: '#14b8a6', color: 'white', px: 3, py: 1, borderRadius: '20px', 
-                        fontWeight: 'bold', textDecoration: 'none',
-                        '&:hover': { bgcolor: '#0d9488' }
-                    }}
-                 >
-                     Sign In
-                 </Box>
-             )}
-        </Box>
-
       </Toolbar>
+
+      {/* 🔔 POPUP SNACKBAR */}
+      <Snackbar 
+        open={openSnackbar} 
+        autoHideDuration={4000} 
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity="info" sx={{ width: '100%', bgcolor: '#334155', color: 'white' }}>
+          {snackbarMsg}
+        </Alert>
+      </Snackbar>
+
     </AppBar>
   );
 };
