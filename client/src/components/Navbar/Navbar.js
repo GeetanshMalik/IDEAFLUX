@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Avatar, Button, Toolbar, Typography, Box, IconButton, Badge, Menu, MenuItem, Snackbar, Alert } from '@mui/material';
+import { AppBar, Toolbar, Avatar, Box, IconButton, Tooltip, Typography, Badge, Menu, MenuItem, Snackbar, Alert } from '@mui/material';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { jwtDecode } from 'jwt-decode';
-import * as actionType from '../../constants/actionTypes';
 import io from 'socket.io-client';
 import * as api from '../../api';
+import * as actionType from '../../constants/actionTypes';
 
-// ICONS
-import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
+// Icons
+import ExploreIcon from '@mui/icons-material/Explore';
+import CreateIcon from '@mui/icons-material/AddCircleOutline';
 import SearchIcon from '@mui/icons-material/Search';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import NotificationsIcon from '@mui/icons-material/NotificationsNone';
+import ChatIcon from '@mui/icons-material/ChatBubbleOutline';
+import SettingsIcon from '@mui/icons-material/Settings';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import PersonIcon from '@mui/icons-material/Person';
 
+// 🛑 Your Render URL
 const ENDPOINT = "https://ideaflux-54zk.onrender.com";
 
 const Navbar = () => {
@@ -23,6 +25,8 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Menu State (For Logout)
   const [anchorEl, setAnchorEl] = useState(null);
 
   // Notification States
@@ -30,10 +34,13 @@ const Navbar = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
 
+  const isActive = (path) => location.pathname === path;
+
   const logout = () => {
     dispatch({ type: actionType.LOGOUT });
     navigate('/auth');
     setUser(null);
+    setAnchorEl(null);
   };
 
   useEffect(() => {
@@ -45,7 +52,7 @@ const Navbar = () => {
     setUser(JSON.parse(localStorage.getItem('profile')));
   }, [location]);
 
-  // Real-Time Listener
+  // 🔔 REAL-TIME SOCKET LOGIC
   useEffect(() => {
     if (!user) return;
 
@@ -74,92 +81,137 @@ const Navbar = () => {
     return () => socket.disconnect();
   }, [user]);
 
+  // Styles
+  const iconStyle = (path) => ({
+      color: isActive(path) ? '#14b8a6' : '#94a3b8',
+      fontSize: 28,
+      '&:hover': { color: '#14b8a6' }
+  });
+
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
   const handleSnackbarClose = () => setOpenSnackbar(false);
 
   return (
-    <AppBar position="static" color="inherit" sx={{ bgcolor: '#0f172a', borderBottom: '1px solid #1e293b' }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <AppBar position="sticky" sx={{ bgcolor: '#0f172a', borderBottom: '1px solid #1e293b' }} elevation={0}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', minHeight: '70px' }}>
         
-        {/* LEFT: LOGO (Flex 1 to push center) */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-            <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white' }}>
-                <Box sx={{ bgcolor: '#14b8a6', borderRadius: '4px', p: 0.5, mr: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', fontSize: '1rem' }}>IF</Typography>
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: '1px', display: { xs: 'none', sm: 'block' } }}>IDEAFLUX</Typography>
-            </Box>
+        {/* --- EXTREME LEFT: LOGO --- */}
+        <Box display="flex" alignItems="center" sx={{ cursor: 'pointer', minWidth: '150px' }} onClick={() => navigate('/posts')}>
+             <Box sx={{ bgcolor: '#14b8a6', borderRadius: '8px', width: 35, height: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>IF</Typography>
+             </Box>
+             <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', letterSpacing: 1, display: { xs: 'none', sm: 'block' } }}>
+                 IDEAFLUX
+             </Typography>
         </Box>
 
-        {/* CENTER: EXPLORE, SEARCH, CREATE (Flex 1 to stay in middle) */}
-        {user && (
-            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4 }}>
-                {/* Explore -> Home Feed */}
-                <IconButton component={Link} to="/posts" sx={{ color: '#94a3b8', '&:hover': { color: '#14b8a6' } }} title="Explore">
-                    <ExploreOutlinedIcon sx={{ fontSize: 28 }} />
+        {/* --- CENTER: ALL OPTIONS WITH EQUAL DISTANCE --- */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: { xs: 2, md: 5 }, flexGrow: 1 }}>
+            
+            <Tooltip title="Explore">
+                <IconButton component={Link} to="/posts">
+                    <ExploreIcon sx={iconStyle('/posts')} />
                 </IconButton>
+            </Tooltip>
 
-                {/* Search -> Search Page */}
-                <IconButton component={Link} to="/posts/search" sx={{ color: '#94a3b8', '&:hover': { color: '#14b8a6' } }} title="Search">
-                    <SearchIcon sx={{ fontSize: 28 }} />
+            <Tooltip title="Search">
+                <IconButton component={Link} to="/posts/search">
+                    <SearchIcon sx={iconStyle('/posts/search')} />
                 </IconButton>
+            </Tooltip>
 
-                {/* Create -> Home (Focus Form) */}
-                <IconButton component={Link} to="/" sx={{ color: '#94a3b8', '&:hover': { color: '#14b8a6' } }} title="Create Post">
-                    <AddCircleOutlineIcon sx={{ fontSize: 28 }} />
+            <Tooltip title="Create Post">
+                <IconButton component={Link} to="/posts/create">
+                    <CreateIcon sx={{ ...iconStyle('/posts/create'), fontSize: 32 }} />
                 </IconButton>
-            </Box>
-        )}
+            </Tooltip>
 
-        {/* RIGHT: CHAT, NOTIFS, SETTINGS, PROFILE (Flex 1 to align right) */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
-          {user ? (
-            <>
-                <IconButton component={Link} to="/chat" sx={{ color: '#94a3b8' }}>
-                    <ChatBubbleOutlineIcon />
+            <Tooltip title="Messages">
+                <IconButton component={Link} to="/chat">
+                    <ChatIcon sx={iconStyle('/chat')} />
                 </IconButton>
+            </Tooltip>
 
-                <IconButton component={Link} to="/notifications" sx={{ color: '#94a3b8' }}>
+            <Tooltip title="Notifications">
+                <IconButton component={Link} to="/notifications">
                     <Badge badgeContent={notificationCount} color="error">
-                        <NotificationsNoneIcon />
+                        <NotificationsIcon sx={iconStyle('/notifications')} />
                     </Badge>
                 </IconButton>
+            </Tooltip>
 
-                <IconButton component={Link} to="/settings" sx={{ color: '#94a3b8' }}>
-                    <SettingsOutlinedIcon />
+            <Tooltip title="Settings">
+                <IconButton component={Link} to="/settings">
+                    <SettingsIcon sx={iconStyle('/settings')} />
                 </IconButton>
+            </Tooltip>
 
-                <IconButton onClick={handleMenu} sx={{ p: 0, ml: 1 }}>
-                    <Avatar alt={user.result.name} src={user.result.picture} sx={{ width: 35, height: 35 }}>
+        </Box>
+
+        {/* --- EXTREME RIGHT: PROFILE --- */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', minWidth: '150px' }}>
+             {user ? (
+                 <>
+                    <Avatar 
+                       src={user.result.picture} 
+                       alt={user.result.name}
+                       onClick={handleMenu}
+                       sx={{ 
+                           cursor: 'pointer', 
+                           bgcolor: '#14b8a6', 
+                           width: 40, height: 40,
+                           border: isActive(`/profile/${user.result._id}`) ? '2px solid white' : 'none'
+                       }}
+                    >
                         {user.result.name.charAt(0)}
                     </Avatar>
-                </IconButton>
-
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleClose}
-                    PaperProps={{ sx: { bgcolor: '#1e293b', color: 'white' } }}
-                >
-                    <MenuItem component={Link} to={`/profile/${user.result._id}`} onClick={handleClose}>Profile</MenuItem>
-                    <MenuItem onClick={logout} sx={{ color: '#ef4444' }}>
-                        <PowerSettingsNewIcon sx={{ mr: 1 }} /> Logout
-                    </MenuItem>
-                </Menu>
-            </>
-          ) : (
-            <Button component={Link} to="/auth" variant="contained" sx={{ bgcolor: '#14b8a6' }}>Sign In</Button>
-          )}
+                    
+                    {/* DROPDOWN MENU FOR LOGOUT */}
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleClose}
+                        PaperProps={{ 
+                            sx: { 
+                                bgcolor: '#1e293b', 
+                                color: 'white', 
+                                mt: 1,
+                                border: '1px solid #334155'
+                            } 
+                        }}
+                    >
+                        <MenuItem onClick={() => { navigate(`/profile/${user.result._id}`); handleClose(); }}>
+                            <PersonIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> Profile
+                        </MenuItem>
+                        <MenuItem onClick={logout} sx={{ color: '#ef4444' }}>
+                            <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> Logout
+                        </MenuItem>
+                    </Menu>
+                 </>
+             ) : (
+                 <Box 
+                    component={Link} to="/auth"
+                    sx={{ 
+                        bgcolor: '#14b8a6', color: 'white', px: 3, py: 1, borderRadius: '20px', 
+                        fontWeight: 'bold', textDecoration: 'none',
+                        '&:hover': { bgcolor: '#0d9488' }
+                    }}
+                 >
+                     Sign In
+                 </Box>
+             )}
         </Box>
-      </Toolbar>
 
-      {/* NOTIFICATION POPUP */}
+      </Toolbar>
+      
+      {/* 🔔 SNACKBAR POPUP */}
       <Snackbar open={openSnackbar} autoHideDuration={4000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-        <Alert onClose={handleSnackbarClose} severity="info" sx={{ width: '100%', bgcolor: '#334155', color: 'white' }}>
+        <Alert onClose={handleSnackbarClose} severity="info" sx={{ width: '100%', bgcolor: '#334155', color: 'white', border: '1px solid #14b8a6' }}>
           {snackbarMsg}
         </Alert>
       </Snackbar>
+
     </AppBar>
   );
 };
