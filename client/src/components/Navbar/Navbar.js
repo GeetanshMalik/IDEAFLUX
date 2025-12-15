@@ -17,7 +17,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 
 // 🛑 Your Render URL
-const ENDPOINT = "https://ideaflux-server.onrender.com";
+const ENDPOINT = "https://ideaflux-54zk.onrender.com";
 
 const Navbar = () => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('profile')));
