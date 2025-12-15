@@ -7,7 +7,7 @@ import * as actionType from '../../constants/actionTypes';
 import io from 'socket.io-client';
 import * as api from '../../api';
 
-// ICONS - Restoring your exact design
+// ICONS
 import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -16,7 +16,6 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 
-// 🛑 Your Render URL
 const ENDPOINT = "https://ideaflux-54zk.onrender.com";
 
 const Navbar = () => {
@@ -26,7 +25,7 @@ const Navbar = () => {
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
 
-  // 🔔 Notification States
+  // Notification States
   const [notificationCount, setNotificationCount] = useState(0);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
@@ -46,11 +45,10 @@ const Navbar = () => {
     setUser(JSON.parse(localStorage.getItem('profile')));
   }, [location]);
 
-  // 🔔 REAL-TIME LISTENER
+  // Real-Time Listener
   useEffect(() => {
     if (!user) return;
 
-    // 1. Initial Count
     const fetchUnreadCount = async () => {
         try {
             const { data } = await api.fetchNotifications();
@@ -62,7 +60,6 @@ const Navbar = () => {
     };
     fetchUnreadCount();
 
-    // 2. Socket Connection
     const socket = io(ENDPOINT);
     if (user?.result?._id) {
         socket.emit("setup", { _id: user.result._id });
@@ -83,53 +80,56 @@ const Navbar = () => {
 
   return (
     <AppBar position="static" color="inherit" sx={{ bgcolor: '#0f172a', borderBottom: '1px solid #1e293b' }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         
-        {/* LOGO */}
-        <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white' }}>
-            <Box sx={{ bgcolor: '#14b8a6', borderRadius: '4px', p: 0.5, mr: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', fontSize: '1rem' }}>IF</Typography>
+        {/* LEFT: LOGO (Flex 1 to push center) */}
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+            <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white' }}>
+                <Box sx={{ bgcolor: '#14b8a6', borderRadius: '4px', p: 0.5, mr: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', fontSize: '1rem' }}>IF</Typography>
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: '1px', display: { xs: 'none', sm: 'block' } }}>IDEAFLUX</Typography>
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: '1px' }}>IDEAFLUX</Typography>
         </Box>
 
-        {/* ICONS */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {/* CENTER: EXPLORE, SEARCH, CREATE (Flex 1 to stay in middle) */}
+        {user && (
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4 }}>
+                {/* Explore -> Home Feed */}
+                <IconButton component={Link} to="/posts" sx={{ color: '#94a3b8', '&:hover': { color: '#14b8a6' } }} title="Explore">
+                    <ExploreOutlinedIcon sx={{ fontSize: 28 }} />
+                </IconButton>
+
+                {/* Search -> Search Page */}
+                <IconButton component={Link} to="/posts/search" sx={{ color: '#94a3b8', '&:hover': { color: '#14b8a6' } }} title="Search">
+                    <SearchIcon sx={{ fontSize: 28 }} />
+                </IconButton>
+
+                {/* Create -> Home (Focus Form) */}
+                <IconButton component={Link} to="/" sx={{ color: '#94a3b8', '&:hover': { color: '#14b8a6' } }} title="Create Post">
+                    <AddCircleOutlineIcon sx={{ fontSize: 28 }} />
+                </IconButton>
+            </Box>
+        )}
+
+        {/* RIGHT: CHAT, NOTIFS, SETTINGS, PROFILE (Flex 1 to align right) */}
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
           {user ? (
             <>
-                {/* 1. Explore */}
-                <IconButton component={Link} to="/posts" sx={{ color: '#94a3b8' }}>
-                    <ExploreOutlinedIcon />
-                </IconButton>
-
-                {/* 2. Search */}
-                <IconButton component={Link} to="/posts/search" sx={{ color: '#14b8a6' }}>
-                    <SearchIcon />
-                </IconButton>
-
-                {/* 3. Create */}
-                <IconButton component={Link} to="/posts/create" sx={{ color: '#94a3b8' }}>
-                    <AddCircleOutlineIcon />
-                </IconButton>
-
-                {/* 4. Chat */}
                 <IconButton component={Link} to="/chat" sx={{ color: '#94a3b8' }}>
                     <ChatBubbleOutlineIcon />
                 </IconButton>
 
-                {/* 5. Notifications */}
                 <IconButton component={Link} to="/notifications" sx={{ color: '#94a3b8' }}>
                     <Badge badgeContent={notificationCount} color="error">
                         <NotificationsNoneIcon />
                     </Badge>
                 </IconButton>
 
-                {/* 6. Settings */}
                 <IconButton component={Link} to="/settings" sx={{ color: '#94a3b8' }}>
                     <SettingsOutlinedIcon />
                 </IconButton>
 
-                {/* 7. Avatar */}
                 <IconButton onClick={handleMenu} sx={{ p: 0, ml: 1 }}>
                     <Avatar alt={user.result.name} src={user.result.picture} sx={{ width: 35, height: 35 }}>
                         {user.result.name.charAt(0)}
