@@ -6,8 +6,9 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ChatIcon from '@mui/icons-material/Chat';
 import CommentIcon from '@mui/icons-material/Comment';
 import { useNavigate } from 'react-router-dom';
+import * as api from '../../api';
 
-const Notifications = ({ notif }) => {
+const Notifications = ({ notif, onMarkRead }) => {
   const navigate = useNavigate();
 
   // Determine Icon based on type
@@ -21,7 +22,18 @@ const Notifications = ({ notif }) => {
   };
 
   // Click Handler
-  const handleClick = () => {
+  const handleClick = async () => {
+      // Mark as read if not already read
+      if (!notif.read) {
+          try {
+              await api.markNotificationRead(notif._id);
+              onMarkRead(notif._id); // Update parent state
+          } catch (error) {
+              console.log('Error marking notification as read:', error);
+          }
+      }
+
+      // Navigate to appropriate page
       if (notif.type === 'message') {
           navigate('/chat');
       } else if (notif.post) {

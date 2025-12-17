@@ -1,4 +1,4 @@
-import { FETCH_ALL, FETCH_POST, FETCH_BY_SEARCH, START_LOADING, END_LOADING, CREATE, UPDATE, DELETE, LIKE, COMMENT } from '../constants/actionTypes';
+import { FETCH_ALL, FETCH_POST, FETCH_BY_SEARCH, START_LOADING, END_LOADING, CREATE, UPDATE, DELETE, LIKE, COMMENT, SHARE } from '../constants/actionTypes';
 import * as api from '../api/index.js';
 
 // 🛑 NEW: Get Single Post
@@ -7,17 +7,25 @@ export const getPost = (id) => async (dispatch) => {
     dispatch({ type: START_LOADING });
     const { data } = await api.fetchPost(id);
 
-    dispatch({ type: FETCH_POST, payload: data });
+    // Server returns { post, relatedPosts }, we need to handle both
+    if (data && data.post) {
+      dispatch({ type: FETCH_POST, payload: { post: data.post, posts: data.relatedPosts || [] } });
+    } else {
+      // Handle case where post is not found
+      dispatch({ type: FETCH_POST, payload: { post: null, posts: [] } });
+    }
     dispatch({ type: END_LOADING });
   } catch (error) {
-    console.log(error);
+    console.error('Error fetching post:', error);
+    dispatch({ type: FETCH_POST, payload: { post: null, posts: [] } });
+    dispatch({ type: END_LOADING });
   }
 };
 
-export const getPosts = (page) => async (dispatch) => {
+export const getPosts = (page, sort = 'recent', limit = 8) => async (dispatch) => {
   try {
     dispatch({ type: START_LOADING });
-    const { data } = await api.fetchPosts(page);
+    const { data } = await api.fetchPosts(page, sort, limit);
 
     dispatch({ type: FETCH_ALL, payload: data });
     dispatch({ type: END_LOADING });
@@ -90,6 +98,16 @@ export const deletePost = (id) => async (dispatch) => {
     await api.deletePost(id);
 
     dispatch({ type: DELETE, payload: id });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const sharePost = (id) => async (dispatch) => {
+  try {
+    const { data } = await api.sharePost(id);
+
+    dispatch({ type: SHARE, payload: data });
   } catch (error) {
     console.log(error);
   }

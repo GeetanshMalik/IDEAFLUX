@@ -1,93 +1,182 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// 1. The Dictionary of Translations
+const LanguageContext = createContext();
+
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+};
+
+// Translation data
 const translations = {
   en: {
-    settings: "Settings",
-    account: "Account",
-    displayName: "Display Name",
-    email: "Email Address",
-    publicProfile: "Public Profile",
-    preferences: "Preferences",
-    darkMode: "Dark Mode",
-    language: "Language",
-    notifications: "Notifications",
-    notif_likes: "Likes on your posts",
-    notif_comments: "Comments on your posts",
-    notif_follows: "New Followers",
-    notif_mentions: "Mentions & Tags",
-    privacy: "Privacy & Security",
-    activityStatus: "Show Activity Status",
-    blockedUsers: "Blocked Users",
-    changePass: "Change Password",
-    deleteAccount: "Delete Account",
-    save: "Save Changes",
-    help: "Help & Support",
-    report: "Report a Problem"
-  },
-  hi: {
-    settings: "सेटिंग्स",
-    account: "खाता",
-    displayName: "प्रदर्शन नाम",
-    email: "ईमेल पता",
-    publicProfile: "सार्वजनिक प्रोफ़ाइल",
-    preferences: "प्राथमिकताएँ",
-    darkMode: "डार्क मोड",
-    language: "भाषा",
-    notifications: "सूचनाएं",
-    notif_likes: "आपकी पोस्ट पर लाइक",
-    notif_comments: "आपकी पोस्ट पर टिप्पणियां",
-    notif_follows: "नए फॉलोअर्स",
-    notif_mentions: "मेंशन और टैग",
-    privacy: "गोपनीयता और सुरक्षा",
-    activityStatus: "सक्रिय स्थिति दिखाएं",
-    blockedUsers: "ब्लॉक किए गए उपयोगकर्ता",
-    changePass: "पासवर्ड बदलें",
-    deleteAccount: "खाता हटाएं",
-    save: "परिवर्तन सहेजें",
-    help: "सहायता और समर्थन",
-    report: "समस्या की रिपोर्ट करें"
+    // Navigation
+    explore: 'Explore',
+    search: 'Search',
+    create: 'Create Post',
+    messages: 'Messages',
+    notifications: 'Notifications',
+    settings: 'Settings',
+    profile: 'Profile',
+    logout: 'Logout',
+    
+    // Posts
+    recent: 'Recent',
+    trending: 'Trending',
+    popular: 'Popular',
+    like: 'Like',
+    likes: 'Likes',
+    comment: 'Comment',
+    comments: 'Comments',
+    share: 'Share',
+    delete: 'Delete',
+    
+    // Common
+    loading: 'Loading...',
+    save: 'Save',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    update: 'Update',
+    
+    // AI Assistant
+    aiAssistant: 'AI Assistant',
+    writeCaption: 'Write a caption',
+    suggestTopics: 'Suggest topics',
+    improveContent: 'Improve content',
+    creativeIdeas: 'Creative ideas',
+    
+    // Settings
+    language: 'Language',
+    theme: 'Theme',
+    privacy: 'Privacy',
+    account: 'Account',
   },
   es: {
-    settings: "Configuración",
-    account: "Cuenta",
-    displayName: "Nombre para mostrar",
-    email: "Correo electrónico",
-    publicProfile: "Perfil público",
-    preferences: "Preferencias",
-    darkMode: "Modo oscuro",
-    language: "Idioma",
-    notifications: "Notificaciones",
-    notif_likes: "Me gusta en tus publicaciones",
-    notif_comments: "Comentarios en tus publicaciones",
-    notif_follows: "Nuevos seguidores",
-    notif_mentions: "Menciones y etiquetas",
-    privacy: "Privacidad y seguridad",
-    activityStatus: "Mostrar estado de actividad",
-    blockedUsers: "Usuarios bloqueados",
-    changePass: "Cambiar contraseña",
-    deleteAccount: "Eliminar cuenta",
-    save: "Guardar cambios",
-    help: "Ayuda y soporte",
-    report: "Reportar un problema"
+    // Navigation
+    explore: 'Explorar',
+    search: 'Buscar',
+    create: 'Crear Publicación',
+    messages: 'Mensajes',
+    notifications: 'Notificaciones',
+    settings: 'Configuración',
+    profile: 'Perfil',
+    logout: 'Cerrar Sesión',
+    
+    // Posts
+    recent: 'Reciente',
+    trending: 'Tendencia',
+    popular: 'Popular',
+    like: 'Me Gusta',
+    likes: 'Me Gusta',
+    comment: 'Comentar',
+    comments: 'Comentarios',
+    share: 'Compartir',
+    delete: 'Eliminar',
+    
+    // Common
+    loading: 'Cargando...',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    edit: 'Editar',
+    update: 'Actualizar',
+    
+    // AI Assistant
+    aiAssistant: 'Asistente IA',
+    writeCaption: 'Escribir subtítulo',
+    suggestTopics: 'Sugerir temas',
+    improveContent: 'Mejorar contenido',
+    creativeIdeas: 'Ideas creativas',
+    
+    // Settings
+    language: 'Idioma',
+    theme: 'Tema',
+    privacy: 'Privacidad',
+    account: 'Cuenta',
+  },
+  fr: {
+    // Navigation
+    explore: 'Explorer',
+    search: 'Rechercher',
+    create: 'Créer un Post',
+    messages: 'Messages',
+    notifications: 'Notifications',
+    settings: 'Paramètres',
+    profile: 'Profil',
+    logout: 'Déconnexion',
+    
+    // Posts
+    recent: 'Récent',
+    trending: 'Tendance',
+    popular: 'Populaire',
+    like: 'J\'aime',
+    likes: 'J\'aime',
+    comment: 'Commenter',
+    comments: 'Commentaires',
+    share: 'Partager',
+    delete: 'Supprimer',
+    
+    // Common
+    loading: 'Chargement...',
+    save: 'Sauvegarder',
+    cancel: 'Annuler',
+    edit: 'Modifier',
+    update: 'Mettre à jour',
+    
+    // AI Assistant
+    aiAssistant: 'Assistant IA',
+    writeCaption: 'Écrire une légende',
+    suggestTopics: 'Suggérer des sujets',
+    improveContent: 'Améliorer le contenu',
+    creativeIdeas: 'Idées créatives',
+    
+    // Settings
+    language: 'Langue',
+    theme: 'Thème',
+    privacy: 'Confidentialité',
+    account: 'Compte',
   }
 };
 
-export const LanguageContext = createContext();
-
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('en'); // Default English
+  const [currentLanguage, setCurrentLanguage] = useState('en');
 
-  // Helper function to get text
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('ideaflux_language');
+    if (savedLanguage && translations[savedLanguage]) {
+      setCurrentLanguage(savedLanguage);
+    }
+  }, []);
+
+  const changeLanguage = (language) => {
+    if (translations[language]) {
+      setCurrentLanguage(language);
+      localStorage.setItem('ideaflux_language', language);
+    }
+  };
+
   const t = (key) => {
-    return translations[language][key] || key;
+    return translations[currentLanguage][key] || translations.en[key] || key;
+  };
+
+  const value = {
+    currentLanguage,
+    changeLanguage,
+    t,
+    availableLanguages: [
+      { code: 'en', name: 'English' },
+      { code: 'es', name: 'Español' },
+      { code: 'fr', name: 'Français' }
+    ]
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
 };
 
-export const useLanguage = () => useContext(LanguageContext);
+export default LanguageContext;

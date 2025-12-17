@@ -49,7 +49,7 @@ const Auth = () => {
       // Send to backend to create/find user in DB
       const { data } = await api.googleSignIn(user);
       dispatch({ type: 'AUTH', data });
-      navigate('/explore');
+      navigate('/posts');
     } catch (error) {
       console.log(error);
     }

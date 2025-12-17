@@ -1,7 +1,24 @@
-import { createStore, applyMiddleware, compose } from 'redux';
-import thunk from 'redux-thunk';
-import { reducers } from './reducers';
+import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers } from '@reduxjs/toolkit';
+import postsReducer from './reducers/posts';
+import authReducer from './reducers/auth';
+import userReducer from './reducers/user';
 
-const store = createStore(reducers, compose(applyMiddleware(thunk)));
+const rootReducer = combineReducers({
+  posts: postsReducer,
+  auth: authReducer,
+  user: userReducer,
+});
+
+const store = configureStore({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+      },
+    }),
+  devTools: process.env.NODE_ENV !== 'production',
+});
 
 export default store;

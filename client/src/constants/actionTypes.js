@@ -6,6 +6,7 @@ export const FETCH_BY_SEARCH = 'FETCH_BY_SEARCH';
 export const FETCH_POST = 'FETCH_POST'; // This was likely missing
 export const LIKE = 'LIKE';
 export const COMMENT = 'COMMENT';
+export const SHARE = 'SHARE';
 
 export const AUTH = 'AUTH';
 export const LOGOUT = 'LOGOUT';

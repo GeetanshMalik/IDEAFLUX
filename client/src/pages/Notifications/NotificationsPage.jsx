@@ -6,8 +6,8 @@ import * as api from "../../api";
 import Notifications from "./Notifications";
 import io from 'socket.io-client';
 
-// 🛑 IMPORTANT: Make sure this matches your Render URL exactly
-const ENDPOINT = "https://ideaflux-54zk.onrender.com";
+// Use environment variable or fallback to localhost
+const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -29,21 +29,58 @@ const NotificationsPage = () => {
     getNotifs();
   }, []);
 
-  // 2. Real-time Listener
+  // 2. Real-time Listener (Using Chat Pattern - Fixed)
   useEffect(() => {
-    const socket = io(ENDPOINT);
+    if (!user?.result?._id) return;
+
+    console.log('🔌 Connecting to notifications socket:', ENDPOINT);
+    const socket = io(ENDPOINT, {
+      transports: ['websocket', 'polling'],
+      timeout: 5000,
+      forceNew: false // Don't force new connection
+    });
     
-    // 🛑 CRITICAL FIX: Send ONLY the ID to prevent 413 Error
-    if (user?.result?._id) {
-        socket.emit("setup", { _id: user.result._id });
-    }
+    socket.emit("setup", { _id: user.result._id });
     
-    socket.on("notification received", (newNotif) => {
-        setNotifications((prev) => [newNotif, ...prev]);
+    socket.on('connected', () => {
+      console.log('✅ Notifications socket setup confirmed');
     });
 
-    return () => socket.disconnect();
-  }, [user]);
+    const handleNotificationReceived = (newNotif) => {
+      console.log('🔔 New notification received:', newNotif);
+      // Only add if it's not already in the list (prevent duplicates)
+      setNotifications((prev) => {
+        const exists = prev.find(n => n._id === newNotif._id);
+        if (exists) return prev;
+        return [newNotif, ...prev];
+      });
+    };
+    
+    socket.on("notification received", handleNotificationReceived);
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ Notification socket connection failed:', error);
+    });
+
+    socket.on('connect', () => {
+      console.log('🔌 Socket connected to server');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Socket disconnected from server');
+    });
+
+    // Cleanup to prevent duplicate listeners
+    return () => {
+      socket.off("notification received", handleNotificationReceived);
+      socket.off('connected');
+      socket.off('connect_error');
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.disconnect();
+      console.log('🔌 Notifications socket disconnected and cleaned up');
+    };
+  }, [user?.result?._id]);
 
   const handleMarkAllRead = async () => {
       try {
@@ -55,7 +92,19 @@ const NotificationsPage = () => {
   };
 
   const handleClearAll = async () => {
-      setNotifications([]);
+      try {
+          await api.markNotificationsRead(); // Mark as read on server
+          setNotifications(prev => prev.map(n => ({ ...n, read: true }))); // Keep them but mark as read
+      } catch (error) {
+          console.log(error);
+      }
+  };
+
+  const handleMarkSingleRead = (notificationId) => {
+      // Just update the local state - the API call is already made in Notifications component
+      setNotifications(prev => 
+          prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
+      );
   };
 
   return (
@@ -87,7 +136,7 @@ const NotificationsPage = () => {
         ) : (
           <List sx={{ maxHeight: '70vh', overflowY: 'auto' }}>
             {notifications.map((notif) => (
-              <Notifications key={notif._id} notif={notif} />
+              <Notifications key={notif._id} notif={notif} onMarkRead={handleMarkSingleRead} />
             ))}
           </List>
         )}

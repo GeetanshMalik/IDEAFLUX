@@ -14,17 +14,18 @@ const PostDetails = () => {
   const { id } = useParams();
 
   useEffect(() => {
-    dispatch(getPost(id));
+    if (id) {
+      dispatch(getPost(id));
+    }
   }, [id, dispatch]);
 
   useEffect(() => {
-    if (post) {
-      dispatch(getPostsBySearch({ search: 'none', tags: post?.tags.join(',') }));
+    if (post && post.tags && post.tags.length > 0) {
+      dispatch(getPostsBySearch({ search: 'none', tags: post.tags.join(',') }));
     }
   }, [post, dispatch]);
 
-  if (!post) return null;
-
+  // Show loading while fetching
   if (isLoading) {
     return (
       <Paper elevation={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4, borderRadius: '15px', bgcolor: '#1e293b', height: '300px' }}>
@@ -33,8 +34,34 @@ const PostDetails = () => {
     );
   }
 
+  // Show error if no post found
+  if (!post) {
+    return (
+      <Paper elevation={6} sx={{ p: 4, borderRadius: '15px', bgcolor: '#1e293b', color: 'white', textAlign: 'center' }}>
+        <Typography variant="h5" sx={{ mb: 2 }}>Post not found</Typography>
+        <Typography variant="body1" sx={{ color: '#94a3b8', mb: 3 }}>
+          The post you're looking for doesn't exist or has been removed.
+        </Typography>
+        <button 
+          onClick={() => navigate('/posts')}
+          style={{
+            backgroundColor: '#14b8a6',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          Back to Posts
+        </button>
+      </Paper>
+    );
+  }
+
   // 🛑 FIX: Filter out the current post from recommended posts
-  const recommendedPosts = posts.filter(({ _id }) => _id !== post._id);
+  const recommendedPosts = posts && Array.isArray(posts) ? posts.filter(({ _id }) => _id !== post._id) : [];
 
   const openPost = (_id) => navigate(`/posts/${_id}`);
 
@@ -47,11 +74,13 @@ const PostDetails = () => {
           <Typography variant="h3" component="h2" sx={{ fontWeight: 'bold' }}>{post.title}</Typography>
           
           <Typography gutterBottom variant="h6" color="#94a3b8" component="h2">
-             {post.tags.map((tag) => `#${tag} `)}
+             {post.tags && Array.isArray(post.tags) && post.tags.length > 0 
+               ? post.tags.map((tag) => `#${tag} `).join('') 
+               : 'No tags'}
           </Typography>
           
           <Typography variant="body1" component="p" gutterBottom sx={{ fontStyle: 'italic', color: '#cbd5e1' }}>
-             {post.message.length > 300 ? 'Scroll down for full story...' : ''}
+             {post.message && post.message.length > 300 ? 'Scroll down for full story...' : ''}
           </Typography>
 
           {/* 🛑 FIX: RENDER HTML CONTENT (Removes the <p> tags visually) */}
@@ -65,12 +94,12 @@ const PostDetails = () => {
                 '& img': { maxWidth: '100%', borderRadius: '10px' }, // Style images inside content
                 '& a': { color: '#14b8a6', textDecoration: 'underline' } // Style links
             }}
-            dangerouslySetInnerHTML={{ __html: post.message }} 
+            dangerouslySetInnerHTML={{ __html: post.message || '' }} 
           />
           
           <Divider style={{ margin: '20px 0', backgroundColor: '#334155' }} />
           
-          <Typography variant="h6">Created by: {post.name}</Typography>
+          <Typography variant="h6">Created by: {post.name || post.creator?.name || 'Unknown'}</Typography>
           <Typography variant="body1">{moment(post.createdAt).fromNow()}</Typography>
           
           <Divider style={{ margin: '20px 0', backgroundColor: '#334155' }} />
@@ -104,11 +133,25 @@ const PostDetails = () => {
                 onClick={() => openPost(_id)} 
                 key={_id}
               >
-                <img src={selectedFile} width="200px" height="150px" style={{ borderRadius: '10px', objectFit: 'cover' }} alt="post" />
-                <Typography gutterBottom variant="h6" sx={{ mt: 1, fontSize: '1rem', fontWeight: 'bold' }}>{title}</Typography>
-                <Typography gutterBottom variant="subtitle2" sx={{ color: '#94a3b8' }}>{name}</Typography>
-                <Typography gutterBottom variant="subtitle2" sx={{ color: '#cbd5e1' }}>{message.replace(/<[^>]+>/g, '').substring(0, 50)}...</Typography>
-                <Typography gutterBottom variant="subtitle1" sx={{ color: '#14b8a6' }}>Likes: {likes.length}</Typography>
+                <img 
+                  src={selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png'} 
+                  width="200px" 
+                  height="150px" 
+                  style={{ borderRadius: '10px', objectFit: 'cover' }} 
+                  alt="post" 
+                />
+                <Typography gutterBottom variant="h6" sx={{ mt: 1, fontSize: '1rem', fontWeight: 'bold' }}>
+                  {title || 'Untitled'}
+                </Typography>
+                <Typography gutterBottom variant="subtitle2" sx={{ color: '#94a3b8' }}>
+                  {name || 'Unknown'}
+                </Typography>
+                <Typography gutterBottom variant="subtitle2" sx={{ color: '#cbd5e1' }}>
+                  {message ? message.replace(/<[^>]+>/g, '').substring(0, 50) + '...' : 'No content'}
+                </Typography>
+                <Typography gutterBottom variant="subtitle1" sx={{ color: '#14b8a6' }}>
+                  Likes: {likes ? likes.length : 0}
+                </Typography>
               </div>
             ))}
           </div>

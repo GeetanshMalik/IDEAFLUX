@@ -1,28 +1,36 @@
 import React, { useState } from 'react';
-import { Container, Grow, Paper, Typography } from '@mui/material';
+import { Container, Grow, Paper, Typography, Box } from '@mui/material';
 import Form from '../Form/Form';
+import { colors, commonStyles } from '../../theme/globalTheme';
 
 const Create = () => {
     const [currentId, setCurrentId] = useState(null);
 
     return (
-        <Grow in>
-            <Container maxWidth="md" sx={{ mt: 4 }}>
-                <Paper elevation={0} sx={{ 
-                    p: 4, 
-                    borderRadius: '16px', 
-                    bgcolor: '#0f172a', // Dark Background matching screenshot
-                    color: 'white',
-                    border: '1px solid #1e293b' 
-                }}>
-                    <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
-                        Create New Post
-                    </Typography>
-                    
-                    <Form currentId={currentId} setCurrentId={setCurrentId} />
-                </Paper>
+        <Box sx={commonStyles.container}>
+            <Container maxWidth="md" sx={{ pt: 4, pb: 4 }}>
+                <Grow in>
+                    <Paper sx={{ 
+                        ...commonStyles.card,
+                        p: 4
+                    }}>
+                        <Typography 
+                            variant="h4" 
+                            sx={{ 
+                                fontWeight: 700, 
+                                mb: 4, 
+                                color: colors.textPrimary,
+                                textAlign: 'center'
+                            }}
+                        >
+                            Create New Post
+                        </Typography>
+                        
+                        <Form currentId={currentId} setCurrentId={setCurrentId} />
+                    </Paper>
+                </Grow>
             </Container>
-        </Grow>
+        </Box>
     );
 };
 

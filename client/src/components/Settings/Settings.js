@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
     Container, Paper, Typography, Box, Switch, Button, 
-    Divider, TextField, Grow, MenuItem, Select 
+    Divider, TextField, Grow, MenuItem, Select, FormControl,
+    InputLabel, Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -18,16 +19,19 @@ import SaveIcon from '@mui/icons-material/Save';
 import EmailIcon from '@mui/icons-material/Email';
 import ChatIcon from '@mui/icons-material/Chat';
 
+
 import { useLanguage } from '../../context/LanguageContext';
+import { colors, commonStyles } from '../../theme/globalTheme';
+import { useNotification } from '../Notification/NotificationSystem';
 
 const Settings = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { currentLanguage, changeLanguage, t, availableLanguages } = useLanguage();
+  const { showSuccess, showError } = useNotification();
   const user = JSON.parse(localStorage.getItem('profile'));
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [setUser] = useState(user); // Dummy state setter if needed for local updates
   
-  // State for toggles
+  // State for settings
   const [settings, setSettings] = useState({
       allowMessages: true,
       likesNotif: true,
@@ -35,9 +39,35 @@ const Settings = () => {
       followsNotif: true,
       mentionsNotif: true,
   });
+  
+  const [userInfo, setUserInfo] = useState({
+      name: user?.result?.name || '',
+      email: user?.result?.email || '',
+  });
+  
+  const [loading, setLoading] = useState(false);
 
   const handleToggle = (name) => {
       setSettings({ ...settings, [name]: !settings[name] });
+  };
+
+  const handleLanguageChange = (event) => {
+      const newLanguage = event.target.value;
+      changeLanguage(newLanguage);
+      showSuccess(`Language changed to ${availableLanguages.find(lang => lang.code === newLanguage)?.name}`);
+  };
+
+  const handleSaveSettings = async () => {
+      setLoading(true);
+      try {
+          // Here you would typically save settings to the server
+          // await api.updateUserSettings(settings);
+          showSuccess('Settings saved successfully!');
+      } catch (error) {
+          showError('Failed to save settings. Please try again.');
+      } finally {
+          setLoading(false);
+      }
   };
 
   // DELETE ACCOUNT LOGIC
@@ -50,125 +80,314 @@ const Settings = () => {
               // Logout user
               dispatch({ type: actionType.LOGOUT });
               navigate('/auth');
+              showSuccess('Account deleted successfully.');
           } catch (error) {
               console.log(error);
-              alert("Error deleting account.");
+              showError('Error deleting account. Please try again.');
           }
       }
   };
 
   return (
-    <Grow in>
-        <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-            
-            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'text.primary' }}>
-                {t('settings')}
-            </Typography>
+    <Box sx={commonStyles.container}>
+      <Container maxWidth="md" sx={{ pt: 4, pb: 4 }}>
+        
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            fontWeight: 700, 
+            mb: 4, 
+            color: colors.textPrimary,
+            textAlign: { xs: 'center', md: 'left' }
+          }}
+        >
+          {t('settings')}
+        </Typography>
 
-            {/* SECTION 1: ACCOUNT */}
-            <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: '16px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <AccountCircleIcon sx={{ color: 'primary.main', fontSize: 28 }} />
-                    <Typography variant="h6" color="text.primary">{t('account')}</Typography>
-                </Box>
-                <Divider sx={{ mb: 3 }} />
-                
-                <Box display="flex" flexDirection="column" gap={3}>
-                    <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{t('displayName')}</Typography>
-                        <TextField 
-                            fullWidth variant="outlined" defaultValue={user?.result?.name} 
-                            sx={{ borderRadius: '8px' }}
-                        />
-                    </Box>
-
-                    <Box>
-                        <Box display="flex" gap={1} mb={1}>
-                            <EmailIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{t('email')}</Typography>
-                        </Box>
-                        <TextField 
-                            fullWidth variant="outlined" value={user?.result?.email} disabled 
-                            sx={{ borderRadius: '8px', opacity: 0.7 }}
-                        />
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{t('language')}</Typography>
-                        <Select
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                            fullWidth
-                            startAdornment={<LanguageIcon sx={{ mr: 1, color: 'text.secondary' }} />}
-                            sx={{ borderRadius: '8px' }}
-                        >
-                            <MenuItem value="en">English (US)</MenuItem>
-                            <MenuItem value="hi">हिंदी (Hindi)</MenuItem>
-                            <MenuItem value="es">Español (Spanish)</MenuItem>
-                        </Select>
-                    </Box>
-                </Box>
-            </Paper>
-
-            {/* SECTION 2: PRIVACY */}
-            <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: '16px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <LockIcon sx={{ color: 'primary.main', fontSize: 28 }} />
-                    <Typography variant="h6" color="text.primary">{t('preferences')}</Typography>
-                </Box>
-                <Divider sx={{ mb: 3 }} />
-
-                <Box display="flex" flexDirection="column" gap={2}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Box display="flex" alignItems="center" gap={1}>
-                            <ChatIcon sx={{ color: 'text.secondary' }} />
-                            <Typography color="text.primary">Allow Direct Messages</Typography>
-                        </Box>
-                        <Switch checked={settings.allowMessages} onChange={() => handleToggle('allowMessages')} color="primary" />
-                    </Box>
-                </Box>
-            </Paper>
-
-            {/* SECTION 3: NOTIFICATIONS */}
-            <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: '16px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <NotificationsActiveIcon sx={{ color: 'primary.main', fontSize: 28 }} />
-                    <Typography variant="h6" color="text.primary">{t('notifications')}</Typography>
-                </Box>
-                <Divider sx={{ mb: 3 }} />
-
-                <Box display="flex" flexDirection="column" gap={2}>
-                     {[
-                        { label: t('notif_likes'), key: 'likesNotif' },
-                        { label: t('notif_comments'), key: 'commentsNotif' },
-                        { label: t('notif_follows'), key: 'followsNotif' },
-                        { label: t('notif_mentions'), key: 'mentionsNotif' }
-                     ].map((item) => (
-                        <Box key={item.key} display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography color="text.primary">{item.label}</Typography>
-                            <Switch checked={settings[item.key]} onChange={() => handleToggle(item.key)} color="primary" />
-                        </Box>
-                     ))}
-                </Box>
-            </Paper>
-
-            {/* DANGER ZONE */}
-            <Box display="flex" gap={2} flexDirection="column">
-                <Button 
-                    variant="outlined" startIcon={<DeleteForeverIcon />}
-                    onClick={handleDeleteAccount}
-                    sx={{ color: 'error.main', borderColor: 'error.main', py: 1.5, '&:hover': { bgcolor: 'error.light', borderColor: 'error.main', opacity: 0.1 } }}
-                >
-                    {t('deleteAccount')}
-                </Button>
-                
-                <Button variant="contained" size="large" startIcon={<SaveIcon />} sx={{ py: 1.5, fontWeight: 'bold' }}>
-                    {t('save')}
-                </Button>
+        {/* SECTION 1: ACCOUNT */}
+        <Paper sx={{ ...commonStyles.card, p: 4, mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <Box sx={{ 
+              p: 1.5, 
+              borderRadius: 2, 
+              bgcolor: `${colors.primary}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <AccountCircleIcon sx={{ color: colors.primary, fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
+                Account Settings
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Manage your account information and preferences
+              </Typography>
+            </Box>
+          </Box>
+          <Divider sx={{ mb: 3, borderColor: colors.darkTertiary }} />
+          
+          <Box display="flex" flexDirection="column" gap={3}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
+                Display Name
+              </Typography>
+              <TextField 
+                fullWidth 
+                placeholder="Enter your display name"
+                value={userInfo.name}
+                onChange={(e) => setUserInfo({...userInfo, name: e.target.value})}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: colors.darkSecondary,
+                    color: colors.textPrimary,
+                    '& fieldset': { borderColor: colors.darkTertiary },
+                    '&:hover fieldset': { borderColor: colors.primary },
+                    '&.Mui-focused fieldset': { borderColor: colors.primary },
+                  }
+                }}
+              />
             </Box>
 
-        </Container>
-    </Grow>
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
+                Email Address
+              </Typography>
+              <TextField 
+                fullWidth 
+                value={userInfo.email} 
+                disabled 
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: colors.darkTertiary,
+                    color: colors.textMuted,
+                    '& fieldset': { borderColor: colors.darkTertiary },
+                  },
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    WebkitTextFillColor: colors.textMuted
+                  }
+                }}
+                InputProps={{
+                  startAdornment: <EmailIcon sx={{ mr: 1, color: colors.textMuted }} />
+                }}
+              />
+              <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5, display: 'block' }}>
+                Email cannot be changed for security reasons
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
+                Language Preference
+              </Typography>
+              <FormControl fullWidth>
+                <Select
+                  value={currentLanguage}
+                  onChange={handleLanguageChange}
+                  sx={{
+                    bgcolor: colors.darkSecondary,
+                    color: colors.textPrimary,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.darkTertiary },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary },
+                    '& .MuiSelect-select': {
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }
+                  }}
+                >
+                  {availableLanguages.map((lang) => (
+                    <MenuItem key={lang.code} value={lang.code}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LanguageIcon sx={{ color: colors.primary }} />
+                        {lang.name}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+        </Paper>
+
+
+
+        {/* SECTION 2: PRIVACY */}
+        <Paper sx={{ ...commonStyles.card, p: 4, mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <Box sx={{ 
+              p: 1.5, 
+              borderRadius: 2, 
+              bgcolor: `${colors.accent}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <LockIcon sx={{ color: colors.accent, fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
+                Privacy & Security
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Control who can interact with you
+              </Typography>
+            </Box>
+          </Box>
+          <Divider sx={{ mb: 3, borderColor: colors.darkTertiary }} />
+
+          <Box display="flex" justifyContent="space-between" alignItems="center" p={2} 
+               sx={{ bgcolor: colors.darkSecondary, borderRadius: 2, border: `1px solid ${colors.darkTertiary}` }}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box sx={{ 
+                p: 1, 
+                borderRadius: 1, 
+                bgcolor: `${colors.primary}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ChatIcon sx={{ color: colors.primary, fontSize: 20 }} />
+              </Box>
+              <Box>
+                <Typography sx={{ color: colors.textPrimary, fontWeight: 500 }}>
+                  Allow Direct Messages
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                  Let other users send you private messages
+                </Typography>
+              </Box>
+            </Box>
+            <Switch 
+              checked={settings.allowMessages} 
+              onChange={() => handleToggle('allowMessages')} 
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: colors.primary,
+                },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                  backgroundColor: colors.primary,
+                },
+              }}
+            />
+          </Box>
+        </Paper>
+
+        {/* SECTION 3: NOTIFICATIONS */}
+        <Paper sx={{ ...commonStyles.card, p: 4, mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <Box sx={{ 
+              p: 1.5, 
+              borderRadius: 2, 
+              bgcolor: `${colors.secondary}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <NotificationsActiveIcon sx={{ color: colors.secondary, fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
+                Notification Preferences
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                Choose what notifications you want to receive
+              </Typography>
+            </Box>
+          </Box>
+          <Divider sx={{ mb: 3, borderColor: colors.darkTertiary }} />
+
+          <Box display="flex" flexDirection="column" gap={2}>
+            {[
+              { label: 'Likes on posts', key: 'likesNotif', desc: 'Get notified when someone likes your posts', icon: '👍' },
+              { label: 'Comments on posts', key: 'commentsNotif', desc: 'Get notified when someone comments on your posts', icon: '💬' },
+              { label: 'New followers', key: 'followsNotif', desc: 'Get notified when someone follows you', icon: '👥' },
+              { label: 'Mentions', key: 'mentionsNotif', desc: 'Get notified when someone mentions you', icon: '📢' }
+            ].map((item) => (
+              <Box key={item.key} 
+                   sx={{ 
+                     p: 2, 
+                     bgcolor: colors.darkSecondary, 
+                     borderRadius: 2, 
+                     border: `1px solid ${colors.darkTertiary}`,
+                     display: 'flex', 
+                     justifyContent: 'space-between', 
+                     alignItems: 'center' 
+                   }}>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Typography sx={{ fontSize: '1.5rem' }}>{item.icon}</Typography>
+                  <Box>
+                    <Typography sx={{ color: colors.textPrimary, fontWeight: 500 }}>
+                      {item.label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                      {item.desc}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Switch 
+                  checked={settings[item.key]} 
+                  onChange={() => handleToggle(item.key)} 
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: colors.primary,
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: colors.primary,
+                    },
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </Paper>
+
+        {/* ACTION BUTTONS */}
+        <Box display="flex" gap={2} flexDirection={{ xs: 'column', sm: 'row' }}>
+          <Button 
+            variant="contained"
+            size="large" 
+            startIcon={<SaveIcon />} 
+            onClick={handleSaveSettings}
+            disabled={loading}
+            sx={{
+              ...commonStyles.button.primary,
+              flex: 1,
+              py: 1.5, 
+              fontWeight: 600
+            }}
+          >
+            {loading ? 'Saving...' : t('save')}
+          </Button>
+          
+          <Button 
+            variant="outlined" 
+            startIcon={<DeleteForeverIcon />}
+            onClick={handleDeleteAccount}
+            sx={{
+              flex: 1,
+              py: 1.5,
+              fontWeight: 600,
+              borderColor: '#ef4444',
+              color: '#ef4444',
+              bgcolor: 'transparent',
+              textTransform: 'none',
+              fontSize: '1rem',
+              '&:hover': { 
+                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                borderColor: '#ef4444',
+                color: '#ff6b6b'
+              }
+            }}
+          >
+            Delete Account
+          </Button>
+        </Box>
+
+      </Container>
+    </Box>
   );
 };
 

@@ -35,10 +35,27 @@ const Form = ({ currentId, setCurrentId }) => {
         return alert("Please sign in to create a post.");
     }
 
+    // Validation
+    if (!postData.title.trim()) {
+        return alert("Title is required to publish a post.");
+    }
+
+    // Check if message content is empty (strip HTML tags)
+    const strippedMessage = postData.message.replace(/<[^>]*>/g, '').trim();
+    if (!strippedMessage) {
+        return alert("Story content is required to publish a post.");
+    }
+
+    if (strippedMessage.length < 10) {
+        return alert("Story content must be at least 10 characters long.");
+    }
+
     if (currentId) {
       dispatch(updatePost(currentId, { ...postData, name: user?.result?.name }));
+      alert("Post updated successfully!");
     } else {
       dispatch(createPost({ ...postData, name: user?.result?.name }, navigate));
+      alert("Post published successfully!");
     }
     clear();
   };

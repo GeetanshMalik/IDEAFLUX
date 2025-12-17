@@ -1,7 +1,9 @@
 import express from 'express';
 import { 
     signin, 
-    signup, 
+    signup,
+    verifyEmail,
+    resendOTP,
     googleSignin, 
     getUser, 
     searchUsers, 
@@ -12,6 +14,7 @@ import {
     markNotificationsRead,
     deleteUser 
 } from '../controller/users.js';
+import { markNotificationRead } from '../controller/notifications.js';
 import auth from '../middleware/auth.js';
 
 const router = express.Router();
@@ -39,12 +42,15 @@ const safeRouter = express.Router();
 
 safeRouter.post('/signin', signin);
 safeRouter.post('/signup', signup);
+safeRouter.post('/verify-email', verifyEmail);
+safeRouter.post('/resend-otp', resendOTP);
 safeRouter.post('/google', googleSignin);
 
 // Specific routes first
 safeRouter.get('/search', searchUsers);
 safeRouter.get('/notifications', auth, getNotifications); 
 safeRouter.patch('/notifications/read', auth, markNotificationsRead);
+safeRouter.patch('/notifications/:id/read', auth, markNotificationRead);
 
 // Dynamic routes last
 safeRouter.get('/:id', getUser);

@@ -7,7 +7,8 @@ export const signin = (formData, navigate) => async (dispatch) => {
 
     dispatch({ type: AUTH, data });
 
-    navigate('/explore'); // Redirect to Explore on success
+    // Navigate to posts page after successful login
+    navigate('/posts');
   } catch (error) {
     console.log(error);
     // Alert the specific error from the backend
@@ -25,9 +26,18 @@ export const signup = (formData, navigate) => async (dispatch) => {
     
     const { data } = await api.signUp(formData);
 
-    dispatch({ type: AUTH, data });
+    // Check if email verification is required
+    if (data.requiresVerification) {
+      navigate('/verify-email', { 
+        state: { 
+          email: data.email
+        } 
+      });
+      return;
+    }
 
-    navigate('/explore'); // Redirect to Explore on success
+    dispatch({ type: AUTH, data });
+    navigate('/posts'); // Redirect to posts on success
   } catch (error) {
     console.log(error);
     // Alert the specific error from the backend

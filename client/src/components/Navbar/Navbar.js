@@ -13,12 +13,13 @@ import CreateIcon from '@mui/icons-material/AddCircleOutline';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/NotificationsNone';
 import ChatIcon from '@mui/icons-material/ChatBubbleOutline';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import PersonIcon from '@mui/icons-material/Person';
 
 // Your Render URL
-const ENDPOINT = "https://ideaflux-54zk.onrender.com";
+const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "https://ideaflux-54zk.onrender.com";
 
 const Navbar = () => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('profile')));
@@ -36,9 +37,10 @@ const Navbar = () => {
 
   const logout = () => {
     dispatch({ type: actionType.LOGOUT });
-    navigate('/auth');
+    localStorage.removeItem('profile'); // Ensure localStorage is cleared
     setUser(null);
     setAnchorEl(null);
+    navigate('/auth'); // Navigate to auth page
   };
 
   useEffect(() => {
@@ -65,16 +67,32 @@ const Navbar = () => {
     };
     fetchUnreadCount();
 
-    const socket = io(ENDPOINT);
-    if (user?.result?._id) {
-        socket.emit("setup", { _id: user.result._id });
-    }
-
-    socket.on("notification received", (newNotif) => {
-        setNotificationCount((prev) => prev + 1);
-        setSnackbarMsg(`New message from ${newNotif.sender.name}`);
-        setOpenSnackbar(true);
+    console.log('🔌 Navbar connecting to socket:', ENDPOINT);
+    const socket = io(ENDPOINT, {
+      transports: ['websocket', 'polling'],
+      timeout: 5000
     });
+    
+    socket.emit("setup", { _id: user.result._id });
+    
+    socket.on('connected', () => {
+      console.log('✅ Navbar socket setup confirmed');
+    });
+
+    const handleNavbarNotification = (newNotif) => {
+      console.log('🔔 Notification received in Navbar:', newNotif);
+      setNotificationCount((prev) => prev + 1);
+      setSnackbarMsg(`New notification from ${newNotif.sender?.name || 'Someone'}`);
+      setOpenSnackbar(true);
+    };
+
+    socket.on("notification received", handleNavbarNotification);
+
+    // Cleanup to prevent duplicate listeners
+    return () => {
+      socket.off("notification received", handleNavbarNotification);
+      socket.disconnect();
+    };
 
     return () => socket.disconnect();
   }, [user]);
@@ -86,7 +104,7 @@ const Navbar = () => {
   // Styles
   const iconStyle = (path) => ({
       color: isActive(path) ? '#14b8a6' : '#94a3b8',
-      fontSize: 28,
+      fontSize: { xs: 24, sm: 26, md: 28 },
       '&:hover': { color: '#14b8a6' }
   });
 
@@ -106,7 +124,7 @@ const Navbar = () => {
         </Box>
 
         {/* CENTER ICONS */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: { xs: 2, md: 5 }, flexGrow: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: { xs: 0.5, sm: 1.5, md: 3 }, flexGrow: 1 }}>
             
             <Tooltip title="Explore">
                 <IconButton component={Link} to="/posts">
@@ -122,7 +140,13 @@ const Navbar = () => {
 
             <Tooltip title="Create Post">
                 <IconButton component={Link} to="/create">
-                    <CreateIcon sx={{ ...iconStyle('/create'), fontSize: 32 }} />
+                    <CreateIcon sx={{ ...iconStyle('/create'), fontSize: { xs: 26, sm: 28, md: 32 } }} />
+                </IconButton>
+            </Tooltip>
+
+            <Tooltip title="AI Assistant">
+                <IconButton component={Link} to="/ai-assistant">
+                    <SmartToyIcon sx={iconStyle('/ai-assistant')} />
                 </IconButton>
             </Tooltip>
 
@@ -149,7 +173,7 @@ const Navbar = () => {
         </Box>
 
         {/* PROFILE */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', minWidth: '150px' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', minWidth: { xs: '60px', sm: '100px', md: '150px' } }}>
              {user ? (
                  <>
                     <Avatar 
