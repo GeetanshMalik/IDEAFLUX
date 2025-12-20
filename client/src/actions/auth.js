@@ -41,7 +41,14 @@ export const signup = (formData, navigate) => async (dispatch) => {
   } catch (error) {
     console.log(error);
     // Alert the specific error from the backend
-    const message = error.response?.data?.message || "Signup failed. Try again.";
+    const message = error.response?.data?.message || "Please check your email for verification code.";
+    
+    // If it's a verification required response, don't show as error
+    if (error.response?.data?.requiresVerification) {
+      // This is actually success - user needs to verify email
+      return;
+    }
+    
     alert(`Error: ${message}`);
   }
 };

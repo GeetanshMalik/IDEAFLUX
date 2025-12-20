@@ -139,6 +139,7 @@ const EmailVerification = () => {
             value={otp}
             onChange={handleOtpChange}
             placeholder="123456"
+            autoComplete="one-time-code"
             inputProps={{ 
               maxLength: 6,
               style: { 

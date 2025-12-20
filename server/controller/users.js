@@ -73,27 +73,36 @@ export const signup = async (req, res) => {
   const { email, password, confirmPassword, firstName, lastName } = req.body;
   
   try {
+    console.log('📝 Signup attempt for:', email);
+    
     // Input validation
     if (!email || !password || !confirmPassword || !firstName || !lastName) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({ message: "All fields are required." });
     }
 
     if (!validateEmail(email)) {
+      console.log('❌ Invalid email format');
       return res.status(400).json({ message: "Please provide a valid email address." });
     }
 
     if (!validatePassword(password)) {
+      console.log('❌ Invalid password');
       return res.status(400).json({ message: "Password must be at least 6 characters long." });
     }
 
     if (password !== confirmPassword) {
+      console.log('❌ Passwords do not match');
       return res.status(400).json({ message: "Passwords don't match." });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
+      console.log('❌ User already exists');
       return res.status(400).json({ message: "User already exists with this email." });
     }
+
+    console.log('✅ Validation passed, creating verification record');
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -101,6 +110,7 @@ export const signup = async (req, res) => {
     
     // Generate OTP and store verification data
     const otp = generateOTP();
+    console.log('🔢 Generated OTP:', otp);
     
     // Store verification data temporarily
     await EmailVerification.create({
@@ -110,23 +120,30 @@ export const signup = async (req, res) => {
       otp,
       attempts: 0
     });
+    console.log('✅ Verification record created');
 
     // Send OTP email
+    console.log('📧 Attempting to send email...');
     const emailSent = await sendOTPEmail(email, otp, fullName);
+    console.log('📧 Email sent result:', emailSent);
     
     if (!emailSent) {
+      console.log('❌ Email sending failed, cleaning up verification record');
       // Clean up verification record if email fails
       await EmailVerification.deleteOne({ email: email.toLowerCase() });
-      return res.status(500).json({ message: "Failed to send verification email. Please check your email configuration and try again." });
+      return res.status(500).json({ 
+        message: "Failed to send verification email. Please check your email configuration and try again." 
+      });
     }
 
+    console.log('✅ Signup successful, OTP sent to email');
     res.status(200).json({ 
       requiresVerification: true,
       email: email.toLowerCase(),
       message: "Verification code sent to your email. Please check your inbox." 
     });
   } catch (error) {
-    console.error("Signup error:", error);
+    console.error("❌ Signup error:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 };

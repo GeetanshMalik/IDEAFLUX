@@ -122,6 +122,57 @@ app.get('/check-email-config', (req, res) => {
   });
 });
 
+// Enhanced test email with detailed logging
+app.post('/test-email-detailed', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  
+  try {
+    console.log('🔍 Email Configuration Check:');
+    console.log('EMAIL_USER:', process.env.EMAIL_USER);
+    console.log('EMAIL_PASS length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
+    console.log('EMAIL_PASS (first 4 chars):', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.substring(0, 4) + '...' : 'Not set');
+    
+    const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
+    const testOTP = generateOTP();
+    console.log('🧪 Testing email to:', email, 'with OTP:', testOTP);
+    
+    const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
+    
+    if (emailSent) {
+      res.json({ 
+        success: true, 
+        message: 'Test email sent successfully', 
+        otp: testOTP,
+        config: {
+          emailUser: process.env.EMAIL_USER,
+          emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
+        }
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to send test email - check server logs',
+        config: {
+          emailUser: process.env.EMAIL_USER,
+          emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({ 
+      error: 'Test email failed', 
+      details: error.message,
+      config: {
+        emailUser: process.env.EMAIL_USER,
+        emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
+      }
+    });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Database connection with better error handling
