@@ -10,19 +10,60 @@ const createTransporter = () => {
   
   const cleanPassword = process.env.EMAIL_PASS.replace(/\s/g, '');
   
-  return nodemailer.createTransport({
-    service: 'gmail',
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: cleanPassword, // Use cleaned App Password for Gmail
+  console.log('🔧 Creating email transporter with config:');
+  console.log('📧 Email User:', process.env.EMAIL_USER);
+  console.log('🔑 Password Length:', cleanPassword.length);
+  console.log('🌐 Environment:', process.env.NODE_ENV || 'development');
+  
+  // Try different configurations for better cloud compatibility
+  const configs = [
+    // Configuration 1: Standard Gmail with service
+    {
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: cleanPassword,
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
     },
-    tls: {
-      rejectUnauthorized: false
+    // Configuration 2: Direct SMTP without service (better for cloud)
+    {
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: cleanPassword,
+      },
+      tls: {
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
+      },
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 60000
+    },
+    // Configuration 3: Alternative port for restrictive networks
+    {
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: cleanPassword,
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
     }
-  });
+  ];
+  
+  // Use the first config by default, but log all options
+  console.log('📧 Available email configurations:', configs.length);
+  
+  return nodemailer.createTransport(configs[1]); // Use direct SMTP config for cloud
 };
 
 // Generate OTP
@@ -99,15 +140,29 @@ export const sendOTPEmail = async (email, otp, name) => {
     return true;
   } catch (error) {
     console.error('❌ Email sending failed:', error.message);
-    console.error('❌ Full error:', error);
+    console.error('❌ Full error stack:', error.stack);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error response:', error.response);
+    
+    // Detailed error logging for deployment debugging
+    console.error('🔍 Deployment Debug Info:');
+    console.error('- NODE_ENV:', process.env.NODE_ENV);
+    console.error('- Platform:', process.platform);
+    console.error('- Email User Set:', !!process.env.EMAIL_USER);
+    console.error('- Email Pass Set:', !!process.env.EMAIL_PASS);
+    console.error('- Email Pass Length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
     
     // Common Gmail errors
     if (error.code === 'EAUTH') {
       console.error('🔐 Authentication failed. Check your EMAIL_USER and EMAIL_PASS');
-    } else if (error.code === 'ECONNECTION') {
-      console.error('🌐 Connection failed. Check your internet connection');
+    } else if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND') {
+      console.error('🌐 Network/DNS issue. Render might be blocking SMTP connections');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.error('⏰ Connection timeout. Render network restrictions');
     } else if (error.message && error.message.includes('createTransporter')) {
       console.error('⚙️ Email configuration error. Check environment variables.');
+    } else if (error.message && error.message.includes('SMTP')) {
+      console.error('📧 SMTP server issue. Try alternative email service for deployment.');
     }
     
     return false;
