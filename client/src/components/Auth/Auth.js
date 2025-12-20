@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Avatar, Button, Paper, Grid, Typography, Container, Box } from '@mui/material';
+import { Avatar, Button, Paper, Grid, Typography, Container, Box, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google'; // NEW LIBRARY
 import { jwtDecode } from 'jwt-decode'; // TO DECODE TOKEN
@@ -12,6 +12,7 @@ import * as api from '../../api';
 const Auth = () => {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
   const [isSignup, setIsSignup] = useState(false);
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -24,12 +25,20 @@ const Auth = () => {
     setShowPassword(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSignup) {
-      dispatch(signup(form, navigate));
-    } else {
-      dispatch(signin(form, navigate));
+    setLoading(true);
+    
+    try {
+      if (isSignup) {
+        await dispatch(signup(form, navigate));
+      } else {
+        await dispatch(signin(form, navigate));
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,8 +94,24 @@ const Auth = () => {
             {isSignup && <Input name="confirmPassword" label="Repeat Password" handleChange={handleChange} type="password" />}
           </Grid>
           
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, bgcolor: '#14b8a6', '&:hover': { bgcolor: '#0d9488' } }}>
-            {isSignup ? 'Sign Up' : 'Sign In'}
+          <Button 
+            type="submit" 
+            fullWidth 
+            variant="contained" 
+            disabled={loading}
+            sx={{ 
+              mt: 3, 
+              mb: 2, 
+              bgcolor: '#14b8a6', 
+              '&:hover': { bgcolor: '#0d9488' },
+              '&:disabled': { bgcolor: '#334155' }
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: 'white' }} />
+            ) : (
+              isSignup ? 'Sign Up' : 'Sign In'
+            )}
           </Button>
 
           {/* NEW GOOGLE BUTTON */}

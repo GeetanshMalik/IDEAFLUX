@@ -61,6 +61,9 @@ const EmailVerification = () => {
       localStorage.setItem('profile', JSON.stringify(data));
       dispatch({ type: 'AUTH', data });
       
+      // Trigger auth state change event
+      window.dispatchEvent(new CustomEvent('auth-change'));
+      
       showSuccess('Email verified successfully! Welcome to IdeaFlux!');
       navigate('/posts');
     } catch (error) {

@@ -23,13 +23,30 @@ const EmailVerification = lazy(() => import('./components/Auth/EmailVerification
 
 // Create a wrapper component to access useLocation
 const AppRoutes = () => {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('profile')));
+  const [user, setUser] = useState(() => {
+    // Initialize user state from localStorage on first load
+    try {
+      const profile = localStorage.getItem('profile');
+      return profile ? JSON.parse(profile) : null;
+    } catch (error) {
+      console.error('Error parsing profile from localStorage:', error);
+      localStorage.removeItem('profile');
+      return null;
+    }
+  });
   const location = useLocation();
 
   // Update user state when localStorage changes or location changes
   useEffect(() => {
     const handleAuthChange = () => {
-      setUser(JSON.parse(localStorage.getItem('profile')));
+      try {
+        const profile = localStorage.getItem('profile');
+        setUser(profile ? JSON.parse(profile) : null);
+      } catch (error) {
+        console.error('Error parsing profile from localStorage:', error);
+        localStorage.removeItem('profile');
+        setUser(null);
+      }
     };
 
     // Listen for custom auth-change events
@@ -38,7 +55,7 @@ const AppRoutes = () => {
     window.addEventListener('storage', handleAuthChange);
     
     // Also check on location change (for login/logout navigation)
-    setUser(JSON.parse(localStorage.getItem('profile')));
+    handleAuthChange();
 
     return () => {
       window.removeEventListener('auth-change', handleAuthChange);
@@ -115,7 +132,7 @@ const AppRoutes = () => {
             />
 
             {/* 6. 404 Fallback */}
-            <Route path="*" element={<Navigate to="/posts" />} />
+            <Route path="*" element={user ? <Navigate to="/posts" /> : <Navigate to="/auth" />} />
           </Routes>
         </Suspense>
       </Container>

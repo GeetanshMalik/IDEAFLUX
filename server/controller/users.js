@@ -122,26 +122,31 @@ export const signup = async (req, res) => {
     });
     console.log('✅ Verification record created');
 
-    // Send OTP email
-    console.log('📧 Attempting to send email...');
-    const emailSent = await sendOTPEmail(email, otp, fullName);
-    console.log('📧 Email sent result:', emailSent);
-    
-    if (!emailSent) {
-      console.log('❌ Email sending failed, cleaning up verification record');
-      // Clean up verification record if email fails
-      await EmailVerification.deleteOne({ email: email.toLowerCase() });
-      return res.status(500).json({ 
-        message: "Failed to send verification email. Please check your email configuration and try again." 
-      });
-    }
-
-    console.log('✅ Signup successful, OTP sent to email');
+    // Send response immediately for fast UI redirect
+    console.log('✅ Signup successful, sending immediate response');
     res.status(200).json({ 
       requiresVerification: true,
       email: email.toLowerCase(),
       message: "Verification code sent to your email. Please check your inbox." 
     });
+
+    // Send OTP email asynchronously (fire-and-forget for speed)
+    console.log('📧 Sending email asynchronously...');
+    sendOTPEmail(email, otp, fullName)
+      .then((emailSent) => {
+        if (emailSent) {
+          console.log('✅ Email sent successfully to:', email);
+        } else {
+          console.log('❌ Email sending failed for:', email);
+          // Note: We don't clean up the verification record here since user might still want to try
+          // The record will auto-expire after 5 minutes anyway
+        }
+      })
+      .catch((error) => {
+        console.error('❌ Email sending error for:', email, error);
+        // Note: We don't clean up the verification record here since user might still want to try
+      });
+
   } catch (error) {
     console.error("❌ Signup error:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
