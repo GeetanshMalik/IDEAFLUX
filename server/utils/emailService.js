@@ -3,6 +3,11 @@ import crypto from 'crypto';
 
 // Create transporter (Gmail configuration)
 const createTransporter = () => {
+  // Check if email configuration exists
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email configuration missing: EMAIL_USER or EMAIL_PASS not set');
+  }
+  
   const cleanPassword = process.env.EMAIL_PASS.replace(/\s/g, '');
   
   return nodemailer.createTransport({
@@ -41,8 +46,6 @@ export const sendOTPEmail = async (email, otp, name) => {
       return false;
     }
 
-    // Clean up the app password (remove spaces if any)
-    const cleanPassword = process.env.EMAIL_PASS.replace(/\s/g, '');
     console.log('📧 Attempting to send email to:', email);
     console.log('📧 Using email account:', process.env.EMAIL_USER);
 
@@ -103,6 +106,8 @@ export const sendOTPEmail = async (email, otp, name) => {
       console.error('🔐 Authentication failed. Check your EMAIL_USER and EMAIL_PASS');
     } else if (error.code === 'ECONNECTION') {
       console.error('🌐 Connection failed. Check your internet connection');
+    } else if (error.message && error.message.includes('createTransporter')) {
+      console.error('⚙️ Email configuration error. Check environment variables.');
     }
     
     return false;

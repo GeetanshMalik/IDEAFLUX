@@ -122,29 +122,26 @@ export const signup = async (req, res) => {
     });
     console.log('✅ Verification record created');
 
-    // Send response immediately for fast UI redirect
-    console.log('✅ Signup successful, sending immediate response');
+    // Always respond immediately for fast UI (email sending is optional)
+    console.log('✅ Signup successful, responding immediately');
     res.status(200).json({ 
       requiresVerification: true,
       email: email.toLowerCase(),
-      message: "Verification code sent to your email. Please check your inbox." 
+      message: "Please check your email for the verification code. If you don't receive it, use the resend option." 
     });
 
-    // Send OTP email asynchronously (fire-and-forget for speed)
-    console.log('📧 Sending email asynchronously...');
+    // Try to send email in background (non-blocking)
+    console.log('📧 Attempting to send email in background...');
     sendOTPEmail(email, otp, fullName)
       .then((emailSent) => {
         if (emailSent) {
           console.log('✅ Email sent successfully to:', email);
         } else {
-          console.log('❌ Email sending failed for:', email);
-          // Note: We don't clean up the verification record here since user might still want to try
-          // The record will auto-expire after 5 minutes anyway
+          console.log('⚠️ Email sending failed for:', email, '- user can use resend OTP');
         }
       })
-      .catch((error) => {
-        console.error('❌ Email sending error for:', email, error);
-        // Note: We don't clean up the verification record here since user might still want to try
+      .catch((emailError) => {
+        console.error('⚠️ Email sending error for:', email, emailError.message);
       });
 
   } catch (error) {
