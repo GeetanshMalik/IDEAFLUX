@@ -173,6 +173,33 @@ app.post('/test-email-detailed', async (req, res) => {
   }
 });
 
+// Debug endpoint to get current OTP for testing (REMOVE IN PRODUCTION)
+app.get('/debug/otp/:email', async (req, res) => {
+  const { email } = req.params;
+  
+  try {
+    const { default: EmailVerification } = await import('./model/emailVerification.js');
+    const verification = await EmailVerification.findOne({ email: email.toLowerCase() });
+    
+    if (!verification) {
+      return res.status(404).json({ error: 'No verification record found for this email' });
+    }
+    
+    res.status(200).json({
+      email: verification.email,
+      otp: verification.otp,
+      name: verification.name,
+      attempts: verification.attempts,
+      createdAt: verification.createdAt,
+      expiresAt: new Date(verification.createdAt.getTime() + 5 * 60 * 1000), // 5 minutes from creation
+      message: 'DEBUG: Use this OTP to verify your email. This endpoint should be removed in production.'
+    });
+  } catch (error) {
+    console.error('Debug OTP error:', error);
+    res.status(500).json({ error: 'Failed to get OTP', details: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Database connection with better error handling

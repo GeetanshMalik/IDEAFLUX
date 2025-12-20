@@ -231,17 +231,28 @@ export const resendOTP = async (req, res) => {
     verification.attempts = 0;
     verification.createdAt = new Date();
     await verification.save();
-
-    // Send new OTP
-    const emailSent = await sendOTPEmail(email, newOTP, verification.name);
     
-    if (!emailSent) {
-      return res.status(500).json({ message: "Failed to send verification email. Please try again." });
-    }
+    console.log('🔢 New OTP generated for:', email, '- OTP:', newOTP);
 
+    // Respond immediately for fast UI
     res.status(200).json({ 
       message: "New verification code sent to your email." 
     });
+
+    // Send new OTP in background (non-blocking)
+    console.log('📧 Sending resend OTP email in background...');
+    sendOTPEmail(email, newOTP, verification.name)
+      .then((emailSent) => {
+        if (emailSent) {
+          console.log('✅ Resend OTP email sent successfully to:', email);
+        } else {
+          console.log('⚠️ Resend OTP email failed for:', email);
+        }
+      })
+      .catch((emailError) => {
+        console.error('⚠️ Resend OTP email error for:', email, emailError.message);
+      });
+
   } catch (error) {
     console.error("Resend OTP error:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
