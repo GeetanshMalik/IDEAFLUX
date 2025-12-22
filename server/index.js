@@ -19,6 +19,7 @@ console.log('🔍 Environment Variables Check:');
 console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set (' + process.env.RESEND_API_KEY.substring(0, 8) + '...)' : 'Not set');
 console.log('EMAIL_USER:', process.env.EMAIL_USER || 'Not set');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'Not set');
+console.log('CONNECTION_URL:', process.env.CONNECTION_URL ? 'Set (MongoDB)' : 'Not set');
 
 const app = express();
 

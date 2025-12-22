@@ -24,11 +24,16 @@ export const sendOTPEmailResend = async (email, otp, name) => {
     
     if (!resendInstance) {
       console.error('❌ Resend not available - RESEND_API_KEY missing or invalid');
+      console.error('🔍 Environment check:');
+      console.error('- RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+      console.error('- RESEND_API_KEY length:', process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 0);
+      console.error('- RESEND_API_KEY starts with re_:', process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.startsWith('re_') : false);
       return false;
     }
 
     console.log('📧 Sending email via Resend to:', email);
     console.log('🔢 OTP:', otp);
+    console.log('🔧 Resend instance created successfully');
 
     const { data, error } = await resendInstance.emails.send({
       from: 'IdeaFlux <onboarding@resend.dev>', // Default Resend domain (works immediately)
@@ -64,17 +69,26 @@ export const sendOTPEmailResend = async (email, otp, name) => {
     });
 
     if (error) {
-      console.error('❌ Resend error:', error);
+      console.error('❌ Resend API error:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return false;
     }
 
     console.log('✅ Email sent successfully via Resend');
     console.log('📧 Message ID:', data.id);
+    console.log('📧 Response data:', JSON.stringify(data, null, 2));
     return true;
 
   } catch (error) {
     console.error('❌ Resend email sending failed:', error.message);
     console.error('❌ Full error:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    // Check if it's an API key issue
+    if (error.message && error.message.includes('API key')) {
+      console.error('🔑 API Key issue detected');
+    }
+    
     return false;
   }
 };
