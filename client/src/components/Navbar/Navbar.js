@@ -6,6 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import io from 'socket.io-client';
 import * as api from '../../api';
 import * as actionType from '../../constants/actionTypes';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Icons
 import ExploreIcon from '@mui/icons-material/Explore';
@@ -22,6 +23,7 @@ import PersonIcon from '@mui/icons-material/Person';
 const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "https://ideaflux-54zk.onrender.com";
 
 const Navbar = () => {
+  const { t } = useLanguage();
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('profile')));
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -126,19 +128,19 @@ const Navbar = () => {
         {/* CENTER ICONS */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: { xs: 0.5, sm: 1.5, md: 3 }, flexGrow: 1 }}>
             
-            <Tooltip title="Explore">
+            <Tooltip title={t('explore')}>
                 <IconButton component={Link} to="/posts">
                     <ExploreIcon sx={iconStyle('/posts')} />
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title="Search">
+            <Tooltip title={t('search')}>
                 <IconButton component={Link} to="/posts/search">
                     <SearchIcon sx={iconStyle('/posts/search')} />
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title="Create Post">
+            <Tooltip title={t('create')}>
                 <IconButton component={Link} to="/create">
                     <CreateIcon sx={{ ...iconStyle('/create'), fontSize: { xs: 26, sm: 28, md: 32 } }} />
                 </IconButton>
@@ -150,13 +152,13 @@ const Navbar = () => {
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title="Messages">
+            <Tooltip title={t('messages')}>
                 <IconButton component={Link} to="/chat">
                     <ChatIcon sx={iconStyle('/chat')} />
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title="Notifications">
+            <Tooltip title={t('notifications')}>
                 <IconButton component={Link} to="/notifications">
                     <Badge badgeContent={notificationCount} color="error">
                         <NotificationsIcon sx={iconStyle('/notifications')} />
@@ -164,7 +166,7 @@ const Navbar = () => {
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title="Settings">
+            <Tooltip title={t('settings')}>
                 <IconButton component={Link} to="/settings">
                     <SettingsIcon sx={iconStyle('/settings')} />
                 </IconButton>
@@ -197,10 +199,10 @@ const Navbar = () => {
                         PaperProps={{ sx: { bgcolor: '#1e293b', color: 'white', border: '1px solid #334155' } }}
                     >
                         <MenuItem onClick={() => { navigate(`/profile/${user.result._id}`); handleClose(); }}>
-                            <PersonIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> Profile
+                            <PersonIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> {t('profile')}
                         </MenuItem>
                         <MenuItem onClick={logout} sx={{ color: '#ef4444' }}>
-                            <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> Logout
+                            <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> {t('logout')}
                         </MenuItem>
                     </Menu>
                  </>

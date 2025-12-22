@@ -119,7 +119,7 @@ const Settings = () => {
             </Box>
             <Box>
               <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-                Account Settings
+                {t('accountSettings')}
               </Typography>
               <Typography variant="body2" sx={{ color: colors.textSecondary }}>
                 Manage your account information and preferences
@@ -131,7 +131,7 @@ const Settings = () => {
           <Box display="flex" flexDirection="column" gap={3}>
             <Box>
               <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
-                Display Name
+                {t('displayName')}
               </Typography>
               <TextField 
                 fullWidth 
@@ -152,7 +152,7 @@ const Settings = () => {
 
             <Box>
               <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
-                Email Address
+                {t('emailAddress')}
               </Typography>
               <TextField 
                 fullWidth 
@@ -179,7 +179,7 @@ const Settings = () => {
 
             <Box>
               <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
-                Language Preference
+                {t('languagePreference')}
               </Typography>
               <FormControl fullWidth>
                 <Select
@@ -201,7 +201,7 @@ const Settings = () => {
                   {availableLanguages.map((lang) => (
                     <MenuItem key={lang.code} value={lang.code}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LanguageIcon sx={{ color: colors.primary }} />
+                        <span style={{ fontSize: '1.2em' }}>{lang.flag}</span>
                         {lang.name}
                       </Box>
                     </MenuItem>
@@ -229,7 +229,7 @@ const Settings = () => {
             </Box>
             <Box>
               <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-                Privacy & Security
+                {t('privacySecurity')}
               </Typography>
               <Typography variant="body2" sx={{ color: colors.textSecondary }}>
                 Control who can interact with you
