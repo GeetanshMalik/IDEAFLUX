@@ -16,8 +16,8 @@ dotenv.config();
 
 // Debug: Check if environment variables are loaded
 console.log('🔍 Environment Variables Check:');
-console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set (' + process.env.RESEND_API_KEY.substring(0, 8) + '...)' : 'Not set');
 console.log('EMAIL_USER:', process.env.EMAIL_USER || 'Not set');
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (' + process.env.EMAIL_PASS.substring(0, 4) + '...)' : 'Not set');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'Not set');
 console.log('CONNECTION_URL:', process.env.CONNECTION_URL ? 'Set (MongoDB)' : 'Not set');
 
@@ -135,73 +135,35 @@ app.get('/test-email/:email', async (req, res) => {
   const { email } = req.params;
   
   try {
-    console.log('🧪 Testing email to:', email);
+    console.log('🧪 Testing Gmail SMTP to:', email);
     
-    const { sendOTPEmailResend, generateOTP } = await import('./utils/resendEmailService.js');
+    const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
     const testOTP = generateOTP();
     
-    const emailSent = await sendOTPEmailResend(email, testOTP, 'Test User');
+    const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
     
     if (emailSent) {
       res.json({ 
         success: true, 
-        message: 'Test email sent successfully', 
+        message: 'Gmail SMTP email sent successfully', 
         otp: testOTP,
-        service: 'Resend',
+        service: 'Gmail SMTP',
         email: email
       });
     } else {
       res.status(500).json({ 
-        error: 'Failed to send test email',
-        service: 'Resend',
+        error: 'Failed to send Gmail SMTP email',
+        service: 'Gmail SMTP',
         email: email
       });
     }
   } catch (error) {
-    console.error('Test email error:', error);
+    console.error('Gmail SMTP test error:', error);
     res.status(500).json({ 
-      error: 'Test email failed', 
+      error: 'Gmail SMTP test failed', 
       details: error.message,
-      service: 'Resend',
+      service: 'Gmail SMTP',
       email: email
-    });
-  }
-});
-
-// Enhanced test email with Resend
-app.post('/test-email-resend', async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
-  
-  try {
-    console.log('🧪 Testing Resend email to:', email);
-    
-    const { sendOTPEmailResend, generateOTP } = await import('./utils/resendEmailService.js');
-    const testOTP = generateOTP();
-    
-    const emailSent = await sendOTPEmailResend(email, testOTP, 'Test User');
-    
-    if (emailSent) {
-      res.json({ 
-        success: true, 
-        message: 'Resend email sent successfully', 
-        otp: testOTP,
-        service: 'Resend'
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Failed to send Resend email',
-        service: 'Resend'
-      });
-    }
-  } catch (error) {
-    console.error('Resend test error:', error);
-    res.status(500).json({ 
-      error: 'Resend test failed', 
-      details: error.message,
-      service: 'Resend'
     });
   }
 });
