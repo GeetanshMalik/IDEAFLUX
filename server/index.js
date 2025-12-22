@@ -129,6 +129,44 @@ app.get('/check-email-config', (req, res) => {
   });
 });
 
+// Test email endpoint (GET method for easy browser testing)
+app.get('/test-email/:email', async (req, res) => {
+  const { email } = req.params;
+  
+  try {
+    console.log('🧪 Testing email to:', email);
+    
+    const { sendOTPEmailResend, generateOTP } = await import('./utils/resendEmailService.js');
+    const testOTP = generateOTP();
+    
+    const emailSent = await sendOTPEmailResend(email, testOTP, 'Test User');
+    
+    if (emailSent) {
+      res.json({ 
+        success: true, 
+        message: 'Test email sent successfully', 
+        otp: testOTP,
+        service: 'Resend',
+        email: email
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to send test email',
+        service: 'Resend',
+        email: email
+      });
+    }
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({ 
+      error: 'Test email failed', 
+      details: error.message,
+      service: 'Resend',
+      email: email
+    });
+  }
+});
+
 // Enhanced test email with Resend
 app.post('/test-email-resend', async (req, res) => {
   const { email } = req.body;

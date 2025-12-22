@@ -113,25 +113,19 @@ export const signup = async (req, res) => {
     console.log('🔢 Generated OTP:', otp);
     
     // Store verification data temporarily
-    await EmailVerification.create({
+    const verificationRecord = await EmailVerification.create({
       email: email.toLowerCase(),
       password: hashedPassword,
       name: fullName,
       otp,
       attempts: 0
     });
-    console.log('✅ Verification record created');
+    console.log('✅ Verification record created with ID:', verificationRecord._id);
 
-    // Always respond immediately for fast UI (email sending is optional)
-    console.log('✅ Signup successful, responding immediately');
-    res.status(200).json({ 
-      requiresVerification: true,
-      email: email.toLowerCase(),
-      message: "Please check your email for the verification code. If you don't receive it, use the resend option." 
-    });
-
-    // Try to send email in background (non-blocking)
+    // Send OTP email in background (non-blocking but with better error handling)
     console.log('📧 Attempting to send email in background...');
+    
+    // Don't wait for email, but log the result
     sendOTPEmail(email, otp, fullName)
       .then((emailSent) => {
         if (emailSent) {
@@ -143,6 +137,14 @@ export const signup = async (req, res) => {
       .catch((emailError) => {
         console.error('⚠️ Email sending error for:', email, emailError.message);
       });
+
+    // Always respond immediately for fast UI (after database record is created)
+    console.log('✅ Signup successful, responding immediately');
+    res.status(200).json({ 
+      requiresVerification: true,
+      email: email.toLowerCase(),
+      message: "Please check your email for the verification code. If you don't receive it, use the resend option." 
+    });
 
   } catch (error) {
     console.error("❌ Signup error:", error);
