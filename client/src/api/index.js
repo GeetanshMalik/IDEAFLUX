@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create API instance with base configuration
 const API = axios.create({ 
-  baseURL: process.env.REACT_APP_API_URL || 'https://ideaflux-54zk.onrender.com',
+  baseURL: process.env.REACT_APP_API_URL || 'https://ideaflux-backend.vercel.app',
   timeout: 10000, // 10 second timeout
   headers: {
     'Content-Type': 'application/json',
