@@ -14,6 +14,12 @@ import chatRoutes from './route/chat.js';
 // Load environment variables
 dotenv.config();
 
+// Debug: Check if environment variables are loaded
+console.log('🔍 Environment Variables Check:');
+console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set (' + process.env.RESEND_API_KEY.substring(0, 8) + '...)' : 'Not set');
+console.log('EMAIL_USER:', process.env.EMAIL_USER || 'Not set');
+console.log('NODE_ENV:', process.env.NODE_ENV || 'Not set');
+
 const app = express();
 
 // Security middleware
@@ -122,53 +128,40 @@ app.get('/check-email-config', (req, res) => {
   });
 });
 
-// Enhanced test email with detailed logging
-app.post('/test-email-detailed', async (req, res) => {
+// Enhanced test email with Resend
+app.post('/test-email-resend', async (req, res) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
   }
   
   try {
-    console.log('🔍 Email Configuration Check:');
-    console.log('EMAIL_USER:', process.env.EMAIL_USER);
-    console.log('EMAIL_PASS length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
-    console.log('EMAIL_PASS (first 4 chars):', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.substring(0, 4) + '...' : 'Not set');
+    console.log('🧪 Testing Resend email to:', email);
     
-    const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
+    const { sendOTPEmailResend, generateOTP } = await import('./utils/resendEmailService.js');
     const testOTP = generateOTP();
-    console.log('🧪 Testing email to:', email, 'with OTP:', testOTP);
     
-    const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
+    const emailSent = await sendOTPEmailResend(email, testOTP, 'Test User');
     
     if (emailSent) {
       res.json({ 
         success: true, 
-        message: 'Test email sent successfully', 
+        message: 'Resend email sent successfully', 
         otp: testOTP,
-        config: {
-          emailUser: process.env.EMAIL_USER,
-          emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
-        }
+        service: 'Resend'
       });
     } else {
       res.status(500).json({ 
-        error: 'Failed to send test email - check server logs',
-        config: {
-          emailUser: process.env.EMAIL_USER,
-          emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
-        }
+        error: 'Failed to send Resend email',
+        service: 'Resend'
       });
     }
   } catch (error) {
-    console.error('Test email error:', error);
+    console.error('Resend test error:', error);
     res.status(500).json({ 
-      error: 'Test email failed', 
+      error: 'Resend test failed', 
       details: error.message,
-      config: {
-        emailUser: process.env.EMAIL_USER,
-        emailPassLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
-      }
+      service: 'Resend'
     });
   }
 });
