@@ -11,8 +11,10 @@ import moment from 'moment';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { likePost, deletePost, sharePost } from '../../../actions/posts';
+import { useLanguage } from '../../../context/LanguageProvider';
 
 const Post = ({ post, setCurrentId }) => {
+  const { t } = useLanguage();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [likes, setLikes] = useState(post?.likes || []);
@@ -78,7 +80,7 @@ const Post = ({ post, setCurrentId }) => {
       } else {
         // Fallback: copy to clipboard
         await navigator.clipboard.writeText(`${window.location.origin}/posts/${post._id}`);
-        alert('Link copied to clipboard! Share count updated.');
+        alert(t('linkCopiedToClipboard'));
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
@@ -94,10 +96,10 @@ const Post = ({ post, setCurrentId }) => {
     
     if (likes.length > 0) {
       return currentlyLiked
-        ? <><ThumbUpAltIcon fontSize="small" />&nbsp;{likes.length > 2 ? `You and ${likes.length - 1} others` : `${likes.length} like${likes.length > 1 ? 's' : ''}`}</>
-        : <><ThumbUpAltOutlined fontSize="small" />&nbsp;{likes.length} {likes.length === 1 ? 'Like' : 'Likes'}</>;
+        ? <><ThumbUpAltIcon fontSize="small" />&nbsp;{likes.length > 2 ? t('youAndOthers', { count: likes.length - 1 }) : `${likes.length} ${t(likes.length > 1 ? 'likes' : 'like')}`}</>
+        : <><ThumbUpAltOutlined fontSize="small" />&nbsp;{likes.length} {t(likes.length === 1 ? 'like' : 'likes')}</>;
     }
-    return <><ThumbUpAltOutlined fontSize="small" />&nbsp;Like</>;
+    return <><ThumbUpAltOutlined fontSize="small" />&nbsp;{t('like')}</>;
   };
 
   const openPost = () => {
@@ -169,7 +171,7 @@ const Post = ({ post, setCurrentId }) => {
                 }}
                 onClick={openProfile}
               >
-                {post.creator?.name || post.name || 'Unknown User'}
+                {post.creator?.name || post.name || t('unknownUser')}
               </Typography>
               <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                 {moment(post.createdAt).fromNow()}
@@ -229,7 +231,7 @@ const Post = ({ post, setCurrentId }) => {
             }}
           >
             <Typography variant="body2" sx={{ color: '#64748b' }}>
-              No Image
+              {t('noImage')}
             </Typography>
           </Box>
         )}
@@ -392,12 +394,12 @@ const Post = ({ post, setCurrentId }) => {
 
         {(user?.result?.googleId === post?.creator?._id || user?.result?._id === post?.creator?._id || 
           user?.result?.googleId === post?.creator || user?.result?._id === post?.creator) && (
-          <Tooltip title="Delete Post" arrow>
+          <Tooltip title={t('deletePost')} arrow>
             <Button 
               size="small" 
               onClick={(e) => {
                 e.stopPropagation();
-                if (window.confirm('Are you sure you want to delete this post?')) {
+                if (window.confirm(t('confirmDeletePost'))) {
                   dispatch(deletePost(post._id));
                 }
               }}
@@ -419,7 +421,7 @@ const Post = ({ post, setCurrentId }) => {
               }}
             >
               <DeleteIcon fontSize="small" sx={{ mr: 0.5 }} />
-              Delete
+              {t('delete')}
             </Button>
           </Tooltip>
         )}

@@ -329,11 +329,123 @@ export const getUser = async (req, res) => {
     }
 };
 
+export const getUserProfile = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const user = await User.findById(id)
+            .populate('followers', 'name picture username')
+            .populate('following', 'name picture username')
+            .select('-password'); // Exclude password from response
+        
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(404).json({ message: error.message });
+    }
+};
+
+export const updateUserProfile = async (req, res) => {
+    const { id } = req.params;
+    const { name, username, bio, dateOfBirth, picture, backgroundImage } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ message: `No user with id: ${id}` });
+    }
+
+    // Check if user is updating their own profile
+    if (req.userId !== id) {
+        return res.status(403).json({ message: "You can only update your own profile" });
+    }
+
+    try {
+        // If username is being updated, check if it's available
+        if (username) {
+            const existingUser = await User.findOne({ 
+                username: username.toLowerCase(),
+                _id: { $ne: id } // Exclude current user
+            });
+            
+            if (existingUser) {
+                return res.status(400).json({ message: "Username is already taken" });
+            }
+        }
+
+        const updateData = {
+            name,
+            bio,
+            dateOfBirth
+        };
+
+        // Only add username if it's provided
+        if (username) {
+            updateData.username = username.toLowerCase();
+        }
+
+        // Add picture if provided
+        if (picture !== undefined) {
+            updateData.picture = picture;
+        }
+
+        // Add background image if provided
+        if (backgroundImage !== undefined) {
+            updateData.backgroundImage = backgroundImage;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            id, 
+            updateData, 
+            { new: true }
+        ).select('-password');
+
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const checkUsernameAvailability = async (req, res) => {
+    const { username } = req.params;
+    
+    try {
+        if (!username || username.length < 3) {
+            return res.status(400).json({ 
+                available: false, 
+                message: "Username must be at least 3 characters long" 
+            });
+        }
+
+        // Check if username contains only allowed characters
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            return res.status(400).json({ 
+                available: false, 
+                message: "Username can only contain letters, numbers, and underscores" 
+            });
+        }
+
+        const existingUser = await User.findOne({ username: username.toLowerCase() });
+        
+        res.status(200).json({ 
+            available: !existingUser,
+            message: existingUser ? "Username is already taken" : "Username is available"
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export const searchUsers = async (req, res) => {
     const { searchQuery } = req.query;
     try {
-        const name = new RegExp(searchQuery, "i");
-        const users = await User.find({ name });
+        const searchRegex = new RegExp(searchQuery, "i");
+        
+        // Search by name or username
+        const users = await User.find({
+            $or: [
+                { name: searchRegex },
+                { username: searchRegex }
+            ]
+        }).select('name username picture bio'); // Only return necessary fields
+        
         res.status(200).json(users);
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -437,7 +549,16 @@ export const markNotificationsRead = async (req, res) => {
     }
 };
 
-// --- DELETE ACCOUNT ---
+export const clearNotifications = async (req, res) => {
+    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+
+    try {
+        await Notification.deleteMany({ user: req.userId });
+        res.status(200).json({ message: "All notifications cleared" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 export const deleteUser = async (req, res) => {
     const { id } = req.params;
     try {

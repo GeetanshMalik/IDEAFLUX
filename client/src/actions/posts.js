@@ -1,5 +1,5 @@
-import { FETCH_ALL, FETCH_POST, FETCH_BY_SEARCH, START_LOADING, END_LOADING, CREATE, UPDATE, DELETE, LIKE, COMMENT, SHARE } from '../constants/actionTypes';
-import * as api from '../api/index.js';
+import { FETCH_ALL, FETCH_POST, FETCH_BY_SEARCH, FETCH_BY_USER, START_LOADING, END_LOADING, CREATE, UPDATE, DELETE, LIKE, COMMENT, SHARE } from '../constants/actionTypes';
+import * as api from '../api/index';
 
 // 🛑 NEW: Get Single Post
 export const getPost = (id) => async (dispatch) => {
@@ -40,6 +40,18 @@ export const getPostsBySearch = (searchQuery) => async (dispatch) => {
     const { data: { data } } = await api.fetchPostsBySearch(searchQuery);
 
     dispatch({ type: FETCH_BY_SEARCH, payload: data });
+    dispatch({ type: END_LOADING });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getPostsByUser = (userId) => async (dispatch) => {
+  try {
+    dispatch({ type: START_LOADING });
+    const { data } = await api.fetchPostsByUser(userId);
+
+    dispatch({ type: FETCH_BY_USER, payload: data });
     dispatch({ type: END_LOADING });
   } catch (error) {
     console.log(error);

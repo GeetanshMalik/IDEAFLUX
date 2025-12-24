@@ -7,7 +7,8 @@ export const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '10px 50px',
-    backgroundColor: '#ffffff', // White
+    backgroundColor: '#1e293b', // Dark theme
+    border: '1px solid #334155',
     boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2)',
   },
   heading: {
@@ -28,7 +29,7 @@ export const styles = {
     gap: '20px',
   },
   navButton: {
-    color: 'black',
+    color: '#ffffff',
     textTransform: 'none',
     fontSize: '1rem',
     '&:hover': {

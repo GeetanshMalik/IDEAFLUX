@@ -12,7 +12,8 @@ export const styles = {
     borderRadius: 4,
     marginTop: '1rem',
     padding: '16px',
-    backgroundColor: '#fff',
+    backgroundColor: '#1e293b',
+    border: '1px solid #334155',
   },
   searchButton: {
     marginTop: '10px',

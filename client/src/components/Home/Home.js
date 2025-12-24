@@ -5,10 +5,12 @@ import { getPosts } from '../../actions/posts';
 import Posts from '../Posts/Posts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { useLanguage } from '../../context/LanguageProvider';
 
 import { colors, commonStyles } from '../../theme/globalTheme';
 
 const Home = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('recent');
   const [currentId, setCurrentId] = useState(null);
   const dispatch = useDispatch();
@@ -57,7 +59,7 @@ const Home = () => {
             textAlign: { xs: 'center', md: 'left' }
           }}
         >
-          Explore
+          {t('explore')}
         </Typography>
 
         <Box sx={{ 
@@ -73,7 +75,7 @@ const Home = () => {
             onClick={() => handleTabChange('recent')}
             sx={getButtonStyle('recent')}
           >
-            Recent
+            {t('recent')}
           </Button>
           <Button 
             variant={activeTab === 'trending' ? "contained" : "outlined"} 
@@ -85,7 +87,7 @@ const Home = () => {
             }}
             sx={getButtonStyle('trending')}
           >
-            Trending
+            {t('trending')}
           </Button>
 
         </Box>

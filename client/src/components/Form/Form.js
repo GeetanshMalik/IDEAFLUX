@@ -7,9 +7,11 @@ import ReactQuill from 'react-quill'; // The Rich Text Editor
 import 'react-quill/dist/quill.snow.css'; // Editor Styles
 
 import { createPost, updatePost } from '../../actions/posts';
+import { useLanguage } from '../../context/LanguageProvider';
 import './styles.css'; // We will put the Dark Mode overrides here
 
 const Form = ({ currentId, setCurrentId }) => {
+  const { t } = useLanguage();
   const [postData, setPostData] = useState({ title: '', message: '', tags: [], selectedFile: '' });
   const [tagInput, setTagInput] = useState('');
   
@@ -32,30 +34,30 @@ const Form = ({ currentId, setCurrentId }) => {
     e.preventDefault();
 
     if (!user?.result?.name) {
-        return alert("Please sign in to create a post.");
+        return alert(t('pleaseSignInToCreate'));
     }
 
     // Validation
     if (!postData.title.trim()) {
-        return alert("Title is required to publish a post.");
+        return alert(t('titleRequired'));
     }
 
     // Check if message content is empty (strip HTML tags)
     const strippedMessage = postData.message.replace(/<[^>]*>/g, '').trim();
     if (!strippedMessage) {
-        return alert("Story content is required to publish a post.");
+        return alert(t('contentRequired'));
     }
 
     if (strippedMessage.length < 10) {
-        return alert("Story content must be at least 10 characters long.");
+        return alert(t('contentTooShort'));
     }
 
     if (currentId) {
       dispatch(updatePost(currentId, { ...postData, name: user?.result?.name }));
-      alert("Post updated successfully!");
+      alert(t('postUpdatedSuccessfully'));
     } else {
       dispatch(createPost({ ...postData, name: user?.result?.name }, navigate));
-      alert("Post published successfully!");
+      alert(t('postPublishedSuccessfully'));
     }
     clear();
   };
@@ -96,7 +98,7 @@ const Form = ({ currentId, setCurrentId }) => {
   if (!user?.result?.name) {
     return (
       <Typography variant="h6" align="center" color="white">
-        Please Sign In to create your own IdeaFlux blogs.
+        {t('pleaseSignInToCreateBlogs')}
       </Typography>
     );
   }
@@ -105,11 +107,11 @@ const Form = ({ currentId, setCurrentId }) => {
     <form autoComplete="off" noValidate onSubmit={handleSubmit}>
         
         {/* Title Input */}
-        <Typography variant="body2" sx={{ mb: 1, color: '#e2e8f0', fontWeight: 'bold' }}>Title</Typography>
+        <Typography variant="body2" sx={{ mb: 1, color: '#e2e8f0', fontWeight: 'bold' }}>{t('title')}</Typography>
         <TextField 
             name="title" 
             variant="outlined" 
-            placeholder="Enter an engaging title..." 
+            placeholder={t('enterEngagingTitle')} 
             fullWidth 
             value={postData.title} 
             onChange={(e) => setPostData({ ...postData, title: e.target.value })} 
@@ -122,25 +124,25 @@ const Form = ({ currentId, setCurrentId }) => {
         />
 
         {/* RICH TEXT EDITOR (Replaces standard TextField) */}
-        <Typography variant="body2" sx={{ mb: 1, color: '#e2e8f0', fontWeight: 'bold' }}>Story</Typography>
+        <Typography variant="body2" sx={{ mb: 1, color: '#e2e8f0', fontWeight: 'bold' }}>{t('story')}</Typography>
         <Box sx={{ mb: 3 }}>
             <ReactQuill 
                 theme="snow"
                 value={postData.message}
                 onChange={(content) => setPostData({ ...postData, message: content })}
                 modules={modules}
-                placeholder="Write your masterpiece..."
+                placeholder={t('writeYourMasterpiece')}
                 className="custom-quill"
             />
         </Box>
 
         {/* Tags Section */}
-        <Typography variant="body2" sx={{ mb: 1, color: '#e2e8f0', fontWeight: 'bold' }}>Tags</Typography>
+        <Typography variant="body2" sx={{ mb: 1, color: '#e2e8f0', fontWeight: 'bold' }}>{t('tags')}</Typography>
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
             <TextField 
                 name="tags" 
                 variant="outlined" 
-                placeholder="Add tags..." 
+                placeholder={t('addTags')} 
                 fullWidth 
                 size="small"
                 value={tagInput}
@@ -163,7 +165,7 @@ const Form = ({ currentId, setCurrentId }) => {
                     '&:hover': { bgcolor: '#0d9488' }
                 }}
             >
-                Add
+                {t('add')}
             </Button>
         </Box>
         
@@ -214,7 +216,7 @@ const Form = ({ currentId, setCurrentId }) => {
                     '&:hover': { bgcolor: '#0d9488' } 
                 }}
             >
-                Publish Post
+                {t('publishPost')}
             </Button>
             <Button 
                 variant="contained" 
@@ -231,7 +233,7 @@ const Form = ({ currentId, setCurrentId }) => {
                     '&:hover': { bgcolor: '#475569' } 
                 }}
             >
-                Cancel
+                {t('cancel')}
             </Button>
         </Box>
     </form>

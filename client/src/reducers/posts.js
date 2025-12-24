@@ -1,4 +1,4 @@
-import { FETCH_ALL, FETCH_BY_SEARCH, FETCH_POST, CREATE, UPDATE, DELETE, LIKE, COMMENT, SHARE, START_LOADING, END_LOADING } from '../constants/actionTypes';
+import { FETCH_ALL, FETCH_BY_SEARCH, FETCH_BY_USER, FETCH_POST, CREATE, UPDATE, DELETE, LIKE, COMMENT, SHARE, START_LOADING, END_LOADING } from '../constants/actionTypes';
 
 export default (state = { isLoading: true, posts: [] }, action) => {
   switch (action.type) {
@@ -14,6 +14,8 @@ export default (state = { isLoading: true, posts: [] }, action) => {
         numberOfPages: action.payload.numberOfPages,
       };
     case FETCH_BY_SEARCH:
+      return { ...state, posts: action.payload };
+    case FETCH_BY_USER:
       return { ...state, posts: action.payload };
     case FETCH_POST: // 🛑 HANDLES SINGLE POST DATA
       return { 

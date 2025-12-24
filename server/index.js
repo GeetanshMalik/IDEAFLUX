@@ -98,14 +98,14 @@ app.post('/test-email', async (req, res) => {
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
   }
-  
+
   try {
     const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
     const testOTP = generateOTP();
     console.log('🧪 Testing email to:', email, 'with OTP:', testOTP);
-    
+
     const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
-    
+
     if (emailSent) {
       res.json({ success: true, message: 'Test email sent successfully', otp: testOTP });
     } else {
@@ -121,7 +121,7 @@ app.post('/test-email', async (req, res) => {
 app.get('/check-email-config', (req, res) => {
   const hasEmailUser = !!process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_gmail@gmail.com';
   const hasEmailPass = !!process.env.EMAIL_PASS && process.env.EMAIL_PASS !== 'your_gmail_app_password';
-  
+
   res.json({
     configured: hasEmailUser && hasEmailPass,
     emailUser: hasEmailUser ? process.env.EMAIL_USER : 'Not configured',
@@ -133,15 +133,13 @@ app.get('/check-email-config', (req, res) => {
 // Test email endpoint (GET method for easy browser testing)
 app.get('/test-email/:email', async (req, res) => {
   const { email } = req.params;
-  
   try {
     console.log('🧪 Testing Gmail SMTP to:', email);
-    
     const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
     const testOTP = generateOTP();
-    
+
     const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
-    
+
     if (emailSent) {
       res.json({ 
         success: true, 
@@ -152,9 +150,14 @@ app.get('/test-email/:email', async (req, res) => {
       });
     } else {
       res.status(500).json({ 
-        error: 'Failed to send Gmail SMTP email',
+        error: 'Failed to send Gmail SMTP email - Check server logs for details',
         service: 'Gmail SMTP',
-        email: email
+        email: email,
+        troubleshooting: {
+          checkEmailConfig: 'Verify EMAIL_USER and EMAIL_PASS in .env',
+          checkGmailSettings: 'Enable 2FA and use App Password',
+          checkNetworkAccess: 'Ensure SMTP ports are not blocked'
+        }
       });
     }
   } catch (error) {
@@ -171,7 +174,6 @@ app.get('/test-email/:email', async (req, res) => {
 // Debug endpoint to get current OTP for testing (REMOVE IN PRODUCTION)
 app.get('/debug/otp/:email', async (req, res) => {
   const { email } = req.params;
-  
   try {
     const { default: EmailVerification } = await import('./model/emailVerification.js');
     const verification = await EmailVerification.findOne({ email: email.toLowerCase() });
@@ -179,7 +181,7 @@ app.get('/debug/otp/:email', async (req, res) => {
     if (!verification) {
       return res.status(404).json({ error: 'No verification record found for this email' });
     }
-    
+
     res.status(200).json({
       email: verification.email,
       otp: verification.otp,
@@ -217,7 +219,7 @@ connectDB().then(() => {
     console.log(`🚀 Server running on port: ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
-      
+
   // Socket.io configuration
   const io = new Server(server, {
     pingTimeout: 60000,
@@ -237,7 +239,6 @@ connectDB().then(() => {
         socket.join(userData._id);
         socket.emit("connected");
         console.log(`👤 User ${userData._id} joined their room (Socket: ${socket.id})`);
-        
         // Store user info on socket for debugging
         socket.userId = userData._id;
       }
@@ -257,10 +258,10 @@ connectDB().then(() => {
 
         chat.users.forEach((user) => {
           if (user._id === newMessageReceived.sender._id) return;
-          
+
           // Send to Chat Window
           socket.in(user._id).emit("message received", newMessageReceived);
-          
+
           // Send to Notification Bell
           socket.in(user._id).emit("notification received", {
             user: user._id,

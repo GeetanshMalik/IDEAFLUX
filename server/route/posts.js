@@ -1,10 +1,11 @@
 import express from 'express';
-import { getPosts, getPostsBySearch, getPost, createPost, updatePost, likePost, commentPost, likeComment, deleteComment, deletePost, sharePost } from '../controller/posts.js';
+import { getPosts, getPostsBySearch, getPostsByUser, getPost, createPost, updatePost, likePost, commentPost, likeComment, deleteComment, deletePost, sharePost } from '../controller/posts.js';
 import auth from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.get('/search', getPostsBySearch);
+router.get('/user/:userId', getPostsByUser);
 router.get('/', getPosts);
 router.get('/:id', getPost); // 🛑 THIS IS THE CRITICAL LINE FOR POST DETAILS
 

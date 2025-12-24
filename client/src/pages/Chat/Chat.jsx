@@ -5,12 +5,14 @@ import io from "socket.io-client";
 import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import { LoadingSpinner } from "../../components/Loading/Loading";
+import { useLanguage } from '../../context/LanguageContext';
 import "./chat.css";
 
 // Use local endpoint for development
 const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000"; 
 
 const Chat = () => {
+  const { t } = useLanguage();
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ const Chat = () => {
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4 }}>
-        <LoadingSpinner message="Connecting to chat..." />
+        <LoadingSpinner message={t('connectingToChat')} />
       </Container>
     );
   }
@@ -97,10 +99,10 @@ const Chat = () => {
               color: 'white' 
             }}>
               <Typography variant="h5" sx={{ fontWeight: "bold", mb: 1 }}>
-                IdeaFlux Chat
+                {t('ideafluxChat')}
               </Typography>
               <Typography variant="body1" sx={{ color: '#94a3b8' }}>
-                {chats.length === 0 ? "No conversations yet" : "Select a conversation to start chatting"}
+                {chats.length === 0 ? t('noConversationsYet') : "Select a conversation to start chatting"}
               </Typography>
             </Box>
           )}

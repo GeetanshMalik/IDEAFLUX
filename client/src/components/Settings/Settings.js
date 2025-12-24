@@ -20,7 +20,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import ChatIcon from '@mui/icons-material/Chat';
 
 
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageProvider';
 import { colors, commonStyles } from '../../theme/globalTheme';
 import { useNotification } from '../Notification/NotificationSystem';
 
@@ -62,9 +62,9 @@ const Settings = () => {
       try {
           // Here you would typically save settings to the server
           // await api.updateUserSettings(settings);
-          showSuccess('Settings saved successfully!');
+          showSuccess(t('settingsSavedSuccessfully'));
       } catch (error) {
-          showError('Failed to save settings. Please try again.');
+          showError(t('failedToSaveSettings'));
       } finally {
           setLoading(false);
       }
@@ -72,7 +72,7 @@ const Settings = () => {
 
   // DELETE ACCOUNT LOGIC
   const handleDeleteAccount = async () => {
-      if(window.confirm("Are you sure you want to delete your account? This cannot be undone.")) {
+      if(window.confirm(t('confirmDeleteAccount'))) {
           try {
               const userId = user?.result?._id || user?.result?.googleId;
               await api.deleteAccount(userId);
@@ -80,10 +80,10 @@ const Settings = () => {
               // Logout user
               dispatch({ type: actionType.LOGOUT });
               navigate('/auth');
-              showSuccess('Account deleted successfully.');
+              showSuccess(t('accountDeletedSuccessfully'));
           } catch (error) {
               console.log(error);
-              showError('Error deleting account. Please try again.');
+              showError(t('errorDeletingAccount'));
           }
       }
   };
@@ -122,7 +122,7 @@ const Settings = () => {
                 {t('accountSettings')}
               </Typography>
               <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                Manage your account information and preferences
+                {t('manageAccountInfo')}
               </Typography>
             </Box>
           </Box>
@@ -135,7 +135,7 @@ const Settings = () => {
               </Typography>
               <TextField 
                 fullWidth 
-                placeholder="Enter your display name"
+                placeholder={t('enterDisplayName')}
                 value={userInfo.name}
                 onChange={(e) => setUserInfo({...userInfo, name: e.target.value})}
                 sx={{
@@ -173,7 +173,7 @@ const Settings = () => {
                 }}
               />
               <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5, display: 'block' }}>
-                Email cannot be changed for security reasons
+                {t('emailCannotBeChanged')}
               </Typography>
             </Box>
 
@@ -232,7 +232,7 @@ const Settings = () => {
                 {t('privacySecurity')}
               </Typography>
               <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                Control who can interact with you
+                {t('controlWhoInteracts')}
               </Typography>
             </Box>
           </Box>
@@ -253,10 +253,10 @@ const Settings = () => {
               </Box>
               <Box>
                 <Typography sx={{ color: colors.textPrimary, fontWeight: 500 }}>
-                  Allow Direct Messages
+                  {t('allowDirectMessages')}
                 </Typography>
                 <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                  Let other users send you private messages
+                  {t('letOthersMessage')}
                 </Typography>
               </Box>
             </Box>
@@ -290,10 +290,10 @@ const Settings = () => {
             </Box>
             <Box>
               <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-                Notification Preferences
+                {t('notificationPreferences')}
               </Typography>
               <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                Choose what notifications you want to receive
+                {t('chooseNotifications')}
               </Typography>
             </Box>
           </Box>
@@ -301,10 +301,10 @@ const Settings = () => {
 
           <Box display="flex" flexDirection="column" gap={2}>
             {[
-              { label: 'Likes on posts', key: 'likesNotif', desc: 'Get notified when someone likes your posts', icon: '👍' },
-              { label: 'Comments on posts', key: 'commentsNotif', desc: 'Get notified when someone comments on your posts', icon: '💬' },
-              { label: 'New followers', key: 'followsNotif', desc: 'Get notified when someone follows you', icon: '👥' },
-              { label: 'Mentions', key: 'mentionsNotif', desc: 'Get notified when someone mentions you', icon: '📢' }
+              { label: t('likesOnPosts'), key: 'likesNotif', desc: t('getNotifiedWhenSomeone') + ' ' + t('likesYourPosts'), icon: '👍' },
+              { label: t('commentsOnPosts'), key: 'commentsNotif', desc: t('getNotifiedWhenSomeone') + ' ' + t('commentsOnYourPosts'), icon: '💬' },
+              { label: t('newFollowers'), key: 'followsNotif', desc: t('getNotifiedWhenSomeone') + ' ' + t('followsYou'), icon: '👥' },
+              { label: t('mentions'), key: 'mentionsNotif', desc: t('getNotifiedWhenSomeone') + ' ' + t('mentionsYou'), icon: '📢' }
             ].map((item) => (
               <Box key={item.key} 
                    sx={{ 
@@ -359,7 +359,7 @@ const Settings = () => {
               fontWeight: 600
             }}
           >
-            {loading ? 'Saving...' : t('save')}
+            {loading ? t('saving') : t('save')}
           </Button>
           
           <Button 
@@ -382,7 +382,7 @@ const Settings = () => {
               }
             }}
           >
-            Delete Account
+            {t('deleteAccount')}
           </Button>
         </Box>
 

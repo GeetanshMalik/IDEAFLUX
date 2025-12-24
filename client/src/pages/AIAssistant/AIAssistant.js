@@ -27,13 +27,15 @@ import {
   Psychology as BrainIcon
 } from '@mui/icons-material';
 import { colors, commonStyles } from '../../theme/globalTheme';
+import { useLanguage } from '../../context/LanguageContext';
 
 const AIAssistant = () => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'ai',
-      content: "Hi! I'm your AI writing assistant. I can help you create engaging content, write captions, suggest post topics, and improve your writing. What would you like to work on today?",
+      content: t('aiGreeting'),
       timestamp: new Date()
     }
   ]);
@@ -53,22 +55,22 @@ const AIAssistant = () => {
   const quickPrompts = [
     {
       icon: <WriteIcon />,
-      label: 'Write a caption',
+      label: t('writeCaption'),
       prompt: 'Help me write an engaging caption for my social media post about'
     },
     {
       icon: <IdeaIcon />,
-      label: 'Suggest topics',
+      label: t('suggestTopics'),
       prompt: 'Suggest 5 trending post topics for my blog about'
     },
     {
       icon: <BrainIcon />,
-      label: 'Improve content',
+      label: t('improveContent'),
       prompt: 'Help me improve and make this content more engaging:'
     },
     {
       icon: <SparkleIcon />,
-      label: 'Creative ideas',
+      label: t('creativeIdeas'),
       prompt: 'Give me creative content ideas for'
     }
   ];
@@ -188,7 +190,7 @@ const AIAssistant = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <AIIcon sx={{ color: colors.primary, mr: 1 }} />
             <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-              Quick Actions
+              {t('quickActions')}
             </Typography>
           </Box>
 
@@ -220,7 +222,7 @@ const AIAssistant = () => {
             fullWidth
             sx={commonStyles.button.ghost}
           >
-            Clear Chat
+            {t('clearChat')}
           </Button>
         </Paper>
 
@@ -247,16 +249,16 @@ const AIAssistant = () => {
               </Avatar>
               <Box>
                 <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-                  AI Writing Assistant
+                  {t('aiWritingAssistant')}
                 </Typography>
                 <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                  Powered by GROQ AI
+                  {t('poweredByGroq')}
                 </Typography>
               </Box>
             </Box>
             
             <Chip 
-              label="Online" 
+              label={t('online')} 
               size="small" 
               sx={{ 
                 bgcolor: colors.success, 
@@ -355,7 +357,7 @@ const AIAssistant = () => {
                   }}>
                     <CircularProgress size={16} sx={{ color: colors.primary }} />
                     <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                      AI is thinking...
+                      {t('aiThinking')}
                     </Typography>
                   </Paper>
                 </Box>
@@ -392,7 +394,7 @@ const AIAssistant = () => {
               maxRows={4}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me to help with content, captions, topics, or writing..."
+              placeholder={t('askMeToHelp')}
               onKeyPress={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();

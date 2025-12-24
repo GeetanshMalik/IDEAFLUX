@@ -13,8 +13,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import * as api from '../../api';
 import { useNotification } from '../Notification/NotificationSystem';
+import { useLanguage } from '../../context/LanguageProvider';
 
 const EmailVerification = () => {
+  const { t } = useLanguage();
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -155,12 +157,14 @@ const EmailVerification = () => {
             sx={{
               mb: 3,
               '& .MuiOutlinedInput-root': {
+                bgcolor: '#0f172a',
                 '& fieldset': { borderColor: '#334155' },
                 '&:hover fieldset': { borderColor: '#14b8a6' },
                 '&.Mui-focused fieldset': { borderColor: '#14b8a6' }
               },
               '& .MuiInputLabel-root': { color: '#94a3b8' },
-              '& .MuiInputLabel-root.Mui-focused': { color: '#14b8a6' }
+              '& .MuiInputLabel-root.Mui-focused': { color: '#14b8a6' },
+              '& input': { color: 'white !important' }
             }}
           />
 
@@ -180,7 +184,7 @@ const EmailVerification = () => {
             {loading ? (
               <CircularProgress size={24} sx={{ color: 'white' }} />
             ) : (
-              'Verify Email'
+              t('verifyEmail')
             )}
           </Button>
         </form>
@@ -203,7 +207,7 @@ const EmailVerification = () => {
             ) : countdown > 0 ? (
               `Resend in ${countdown}s`
             ) : (
-              'Resend Code'
+              t('resendCode')
             )}
           </Button>
         </Box>

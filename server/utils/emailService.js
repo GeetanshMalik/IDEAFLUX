@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
-// Create transporter (Gmail configuration optimized for serverless)
+// Create transporter (Gmail configuration optimized for Vercel deployment)
 const createTransporter = () => {
   // Check if email configuration exists
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
@@ -10,29 +10,34 @@ const createTransporter = () => {
   
   const cleanPassword = process.env.EMAIL_PASS.replace(/\s/g, '');
   
-  console.log('🔧 Creating optimized email transporter for serverless');
+  console.log('🔧 Creating Vercel-optimized email transporter');
   console.log('📧 Email User:', process.env.EMAIL_USER);
   
-  // Optimized configuration for serverless functions
+  // Vercel-optimized configuration with SSL port 465
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465, // Default to 465 (SSL), can override with SMTP_PORT=587
+    secure: process.env.SMTP_PORT === '587' ? false : true, // Use SSL for 465, STARTTLS for 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: cleanPassword,
     },
     // Optimized timeouts for serverless
-    connectionTimeout: 10000,   // 10 seconds (faster)
-    greetingTimeout: 5000,      // 5 seconds (faster)
-    socketTimeout: 10000,       // 10 seconds (faster)
-    // Better TLS config for cloud
+    connectionTimeout: 15000,   // 15 seconds
+    greetingTimeout: 10000,     // 10 seconds
+    socketTimeout: 15000,       // 15 seconds
+    // Enhanced TLS config for cloud deployment
     tls: {
       rejectUnauthorized: false,
-      ciphers: 'SSLv3'
+      minVersion: 'TLSv1.2'
     },
     // Pool connections for better performance
     pool: true,
     maxConnections: 1,
-    maxMessages: 3
+    maxMessages: 3,
+    // Additional Vercel-specific settings
+    debug: process.env.NODE_ENV === 'development',
+    logger: process.env.NODE_ENV === 'development'
   });
 };
 
@@ -126,9 +131,9 @@ export const sendOTPEmail = async (email, otp, name) => {
     if (error.code === 'EAUTH') {
       console.error('🔐 Authentication failed. Check your EMAIL_USER and EMAIL_PASS');
     } else if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND') {
-      console.error('🌐 Network/DNS issue. Render might be blocking SMTP connections');
+      console.error('🌐 Network/DNS issue. Vercel might be blocking SMTP connections');
     } else if (error.code === 'ETIMEDOUT') {
-      console.error('⏰ Connection timeout. Render network restrictions');
+      console.error('⏰ Connection timeout. Vercel network restrictions');
     } else if (error.message && error.message.includes('createTransporter')) {
       console.error('⚙️ Email configuration error. Check environment variables.');
     } else if (error.message && error.message.includes('SMTP')) {

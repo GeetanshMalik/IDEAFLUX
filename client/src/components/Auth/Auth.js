@@ -8,8 +8,10 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Input from './Input';
 import { signin, signup } from '../../actions/auth';
 import * as api from '../../api';
+import { useLanguage } from '../../context/LanguageProvider';
 
 const Auth = () => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,10 @@ const Auth = () => {
       // Send to backend to create/find user in DB
       const { data } = await api.googleSignIn(user);
       dispatch({ type: 'AUTH', data });
+      
+      // Trigger auth state change event
+      window.dispatchEvent(new CustomEvent('auth-change'));
+      
       navigate('/posts');
     } catch (error) {
       console.log(error);
@@ -79,7 +85,7 @@ const Auth = () => {
         <Avatar sx={{ margin: 1, bgcolor: '#14b8a6' }}>
           <LockOutlinedIcon />
         </Avatar>
-        <Typography component="h1" variant="h5">{isSignup ? 'Sign Up' : 'Sign In'}</Typography>
+        <Typography component="h1" variant="h5">{isSignup ? t('signup') : t('signin')}</Typography>
         
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', marginTop: 3 }}>
           <Grid container spacing={2}>
@@ -110,7 +116,7 @@ const Auth = () => {
             {loading ? (
               <CircularProgress size={24} sx={{ color: 'white' }} />
             ) : (
-              isSignup ? 'Sign Up' : 'Sign In'
+              isSignup ? t('signup') : t('signin')
             )}
           </Button>
 

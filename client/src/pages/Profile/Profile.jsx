@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import FileBase from 'react-file-base64';
 import moment from 'moment';
 import { colors, commonStyles } from '../../theme/globalTheme';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Icons
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -20,6 +21,7 @@ import * as api from '../../api';
 import Post from '../../components/Posts/Post/Post';
 
 const Profile = () => {
+    const { t } = useLanguage();
     const { id } = useParams();
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -146,7 +148,7 @@ const Profile = () => {
                                     <Box>
                                         {isEditing ? (
                                             <TextField 
-                                                label="Display Name"
+                                                label={t('displayName')}
                                                 value={formData.name} 
                                                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                                                 sx={commonStyles.input}
@@ -171,7 +173,7 @@ const Profile = () => {
                                                     onClick={handleUpdateProfile} 
                                                     sx={commonStyles.button.primary}
                                                 >
-                                                    Save Profile
+                                                    {t('save')}
                                                 </Button>
                                             ) : (
                                                 <Button 
@@ -180,7 +182,7 @@ const Profile = () => {
                                                     onClick={() => setIsEditing(true)} 
                                                     sx={commonStyles.button.ghost}
                                                 >
-                                                    Edit Profile
+                                                    {t('editProfile')}
                                                 </Button>
                                             )
                                         ) : (
@@ -194,7 +196,7 @@ const Profile = () => {
                                                         minWidth: 120
                                                     }}
                                                 >
-                                                    {isFollowing ? 'Unfollow' : 'Follow'}
+                                                    {isFollowing ? t('unfollow') : t('follow')}
                                                 </Button>
                                                 <Button 
                                                     variant="outlined" 
@@ -205,7 +207,7 @@ const Profile = () => {
                                                         minWidth: 120
                                                     }}
                                                 >
-                                                    Message
+                                                    {t('messages')}
                                                 </Button>
                                             </Box>
                                         )}
@@ -217,7 +219,7 @@ const Profile = () => {
                                     {isEditing ? (
                                         <Box display="flex" flexDirection="column" gap={2}>
                                             <TextField 
-                                                label="Bio / About Me"
+                                                label={t('bio')}
                                                 multiline 
                                                 rows={3}
                                                 value={formData.bio} 
@@ -225,7 +227,7 @@ const Profile = () => {
                                                 sx={commonStyles.input}
                                             />
                                             <TextField 
-                                                label="Date of Birth"
+                                                label={t('dateOfBirth')}
                                                 type="date"
                                                 value={formData.dob} 
                                                 onChange={(e) => setFormData({...formData, dob: e.target.value})}
@@ -236,7 +238,7 @@ const Profile = () => {
                                     ) : (
                                         <>
                                             <Typography variant="body1" sx={{ color: colors.textPrimary, mb: 2, whiteSpace: 'pre-line' }}>
-                                                {userProfile.bio || "No bio yet."}
+                                                {userProfile.bio || t('noBioYet')}
                                             </Typography>
                                             
                                             {userProfile.dob && (
@@ -266,7 +268,7 @@ const Profile = () => {
                                             {userPosts.length}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: colors.textSecondary }}>
-                                            Posts
+                                            {t('posts')}
                                         </Typography>
                                     </Box>
                                     <Box textAlign="center">
@@ -274,7 +276,7 @@ const Profile = () => {
                                             {userProfile.followers?.length || 0}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: colors.textSecondary }}>
-                                            Followers
+                                            {t('followers')}
                                         </Typography>
                                     </Box>
                                     <Box textAlign="center">
@@ -282,7 +284,7 @@ const Profile = () => {
                                             {userProfile.following?.length || 0}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: colors.textSecondary }}>
-                                            Following
+                                            {t('following')}
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -294,7 +296,7 @@ const Profile = () => {
 
                 {/* POSTS FEED */}
                 <Typography variant="h5" sx={{ mt: 5, mb: 3, fontWeight: 700, color: colors.textPrimary }}>
-                    Recent Activity
+                    {t('recentActivity')}
                 </Typography>
                 <Grid container spacing={3}>
                     {userPosts.length > 0 ? (
@@ -310,9 +312,9 @@ const Profile = () => {
                                 py: 8,
                                 color: colors.textSecondary 
                             }}>
-                                <Typography variant="h6">No posts yet</Typography>
+                                <Typography variant="h6">{t('noPostsYet')}</Typography>
                                 <Typography variant="body2">
-                                    {isOwner ? "Share your first post!" : "This user hasn't posted anything yet."}
+                                    {isOwner ? t('shareFirstPost') : "This user hasn't posted anything yet."}
                                 </Typography>
                             </Box>
                         </Grid>

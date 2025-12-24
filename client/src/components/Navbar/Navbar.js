@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Avatar, Box, IconButton, Tooltip, Typography, Badge, Menu, MenuItem, Snackbar, Alert } from '@mui/material';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { jwtDecode } from 'jwt-decode';
 import io from 'socket.io-client';
 import * as api from '../../api';
 import * as actionType from '../../constants/actionTypes';
-import { useLanguage } from '../../context/LanguageContext';
 
 // Icons
 import ExploreIcon from '@mui/icons-material/Explore';
@@ -19,12 +17,11 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import PersonIcon from '@mui/icons-material/Person';
 
-// Your Render URL
-const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "https://ideaflux-54zk.onrender.com";
+// Your Vercel URL
+const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
 
 const Navbar = () => {
-  const { t } = useLanguage();
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('profile')));
+  const [user, setUser] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,19 +36,68 @@ const Navbar = () => {
 
   const logout = () => {
     dispatch({ type: actionType.LOGOUT });
-    localStorage.removeItem('profile'); // Ensure localStorage is cleared
+    localStorage.removeItem('profile');
     setUser(null);
     setAnchorEl(null);
-    navigate('/auth'); // Navigate to auth page
+    
+    // Trigger auth state change event
+    window.dispatchEvent(new CustomEvent('auth-change'));
+    
+    // Force immediate redirect
+    window.location.href = '/auth';
+  };
+
+  // Check authentication status
+  const checkAuth = () => {
+    try {
+      const profile = localStorage.getItem('profile');
+      if (profile) {
+        const parsedUser = JSON.parse(profile);
+        // Check if token is still valid
+        if (parsedUser?.token) {
+          const token = parsedUser.token;
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp * 1000 > Date.now()) {
+              setUser(parsedUser);
+            } else {
+              // Token expired, clear it
+              localStorage.removeItem('profile');
+              setUser(null);
+            }
+          } catch (e) {
+            // Invalid token format, clear it
+            localStorage.removeItem('profile');
+            setUser(null);
+          }
+        } else {
+          setUser(parsedUser); // Google auth might not have JWT token
+        }
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Error parsing user profile:', error);
+      localStorage.removeItem('profile');
+      setUser(null);
+    }
   };
 
   useEffect(() => {
-    const token = user?.token;
-    if (token) {
-      const decodedToken = jwtDecode(token);
-      if (decodedToken.exp * 1000 < new Date().getTime()) logout();
-    }
-    setUser(JSON.parse(localStorage.getItem('profile')));
+    checkAuth();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, []);
+
+  useEffect(() => {
+    // Check auth on location change
+    checkAuth();
   }, [location]);
 
   // Real-Time Logic
@@ -68,6 +114,12 @@ const Navbar = () => {
         }
     };
     fetchUnreadCount();
+
+    // Listen for notification updates from NotificationsPage
+    const handleNotificationUpdate = (event) => {
+      setNotificationCount(event.detail.count);
+    };
+    window.addEventListener('notifications-updated', handleNotificationUpdate);
 
     console.log('🔌 Navbar connecting to socket:', ENDPOINT);
     const socket = io(ENDPOINT, {
@@ -93,10 +145,9 @@ const Navbar = () => {
     // Cleanup to prevent duplicate listeners
     return () => {
       socket.off("notification received", handleNavbarNotification);
+      window.removeEventListener('notifications-updated', handleNotificationUpdate);
       socket.disconnect();
     };
-
-    return () => socket.disconnect();
   }, [user]);
 
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
@@ -128,19 +179,19 @@ const Navbar = () => {
         {/* CENTER ICONS */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: { xs: 0.5, sm: 1.5, md: 3 }, flexGrow: 1 }}>
             
-            <Tooltip title={t('explore')}>
+            <Tooltip title="Explore">
                 <IconButton component={Link} to="/posts">
                     <ExploreIcon sx={iconStyle('/posts')} />
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title={t('search')}>
+            <Tooltip title="Search">
                 <IconButton component={Link} to="/posts/search">
                     <SearchIcon sx={iconStyle('/posts/search')} />
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title={t('create')}>
+            <Tooltip title="Create">
                 <IconButton component={Link} to="/create">
                     <CreateIcon sx={{ ...iconStyle('/create'), fontSize: { xs: 26, sm: 28, md: 32 } }} />
                 </IconButton>
@@ -152,13 +203,13 @@ const Navbar = () => {
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title={t('messages')}>
+            <Tooltip title="Messages">
                 <IconButton component={Link} to="/chat">
                     <ChatIcon sx={iconStyle('/chat')} />
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title={t('notifications')}>
+            <Tooltip title="Notifications">
                 <IconButton component={Link} to="/notifications">
                     <Badge badgeContent={notificationCount} color="error">
                         <NotificationsIcon sx={iconStyle('/notifications')} />
@@ -166,7 +217,7 @@ const Navbar = () => {
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title={t('settings')}>
+            <Tooltip title="Settings">
                 <IconButton component={Link} to="/settings">
                     <SettingsIcon sx={iconStyle('/settings')} />
                 </IconButton>
@@ -198,11 +249,23 @@ const Navbar = () => {
                         onClose={handleClose}
                         PaperProps={{ sx: { bgcolor: '#1e293b', color: 'white', border: '1px solid #334155' } }}
                     >
-                        <MenuItem onClick={() => { navigate(`/profile/${user.result._id}`); handleClose(); }}>
-                            <PersonIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> {t('profile')}
+                        <MenuItem onClick={() => { 
+                          console.log('Profile menu clicked'); 
+                          console.log('User object:', user); 
+                          console.log('User ID:', user?.result?._id);
+                          const profileUserId = user?.result?._id;
+                          if (profileUserId) {
+                            console.log('Navigating to profile:', `/profile/${profileUserId}`);
+                            navigate(`/profile/${profileUserId}`); 
+                          } else {
+                            console.error('No user ID found for profile navigation');
+                          }
+                          handleClose(); 
+                        }}>
+                            <PersonIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> Profile
                         </MenuItem>
                         <MenuItem onClick={logout} sx={{ color: '#ef4444' }}>
-                            <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> {t('logout')}
+                            <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> Logout
                         </MenuItem>
                     </Menu>
                  </>

@@ -4,12 +4,14 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import * as api from "../../api";
 import Notifications from "./Notifications";
+import { useLanguage } from '../../context/LanguageContext';
 import io from 'socket.io-client';
 
 // Use environment variable or fallback to localhost
 const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
 
 const NotificationsPage = () => {
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('profile'));
@@ -113,12 +115,12 @@ const NotificationsPage = () => {
         
         {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center" p={3} bgcolor="#0f172a">
-            <Typography variant="h5" fontWeight="bold">Notifications</Typography>
+            <Typography variant="h5" fontWeight="bold">{t('notifications')}</Typography>
             <Box>
-                <IconButton onClick={handleMarkAllRead} sx={{ color: '#14b8a6' }} title="Mark all as read">
+                <IconButton onClick={handleMarkAllRead} sx={{ color: '#14b8a6' }} title={t('markAllRead')}>
                     <CheckCircleOutlineIcon />
                 </IconButton>
-                <IconButton onClick={handleClearAll} sx={{ color: '#ef4444' }} title="Clear all">
+                <IconButton onClick={handleClearAll} sx={{ color: '#ef4444' }} title={t('clearAll')}>
                     <DeleteSweepIcon />
                 </IconButton>
             </Box>
@@ -131,7 +133,7 @@ const NotificationsPage = () => {
             </Box>
         ) : notifications.length === 0 ? (
           <Box p={4} textAlign="center">
-              <Typography color="#94a3b8">No notifications yet.</Typography>
+              <Typography color="#94a3b8">{t('noNotificationsYet')}</Typography>
           </Box>
         ) : (
           <List sx={{ maxHeight: '70vh', overflowY: 'auto' }}>

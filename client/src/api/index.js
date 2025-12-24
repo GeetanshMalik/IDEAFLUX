@@ -74,6 +74,7 @@ API.interceptors.response.use(
 // --- POSTS ---
 export const fetchPost = (id) => API.get(`/posts/${id}`); // 🛑 NEW: Fetch Single Post
 export const fetchPosts = (page, sort = 'recent', limit = 8) => API.get(`/posts?page=${page}&sort=${sort}&limit=${limit}`);
+export const fetchPostsByUser = (userId) => API.get(`/posts/user/${userId}`);
 export const fetchPostsBySearch = (searchQuery) => API.get(`/posts/search?searchQuery=${searchQuery.search || 'none'}&tags=${searchQuery.tags}`);
 export const createPost = (newPost) => API.post('/posts', newPost);
 export const likePost = (id) => API.patch(`/posts/${id}/likePost`);
@@ -91,7 +92,10 @@ export const verifyEmail = (data) => API.post('/user/verify-email', data);
 export const resendOTP = (data) => API.post('/user/resend-otp', data);
 export const googleSignIn = (result) => API.post('/user/google', result);
 export const fetchUser = (id) => API.get(`/user/${id}`);
+export const getUserProfile = (id) => API.get(`/user/profile/${id}`);
 export const updateUser = (id, updatedUser) => API.patch(`/user/${id}`, updatedUser);
+export const updateUserProfile = (id, profileData) => API.patch(`/user/profile/${id}`, profileData);
+export const checkUsernameAvailability = (username) => API.get(`/user/check-username/${username}`);
 export const searchUsers = (query) => API.get(`/user/search?searchQuery=${query}`);
 export const followUser = (id) => API.patch(`/user/${id}/follow`);
 export const unfollowUser = (id) => API.patch(`/user/${id}/unfollow`);
@@ -108,4 +112,5 @@ export const deleteMessage = (messageId) => API.delete(`/message/message/${messa
 // --- NOTIFICATIONS ---
 export const fetchNotifications = () => API.get('/user/notifications');
 export const markNotificationsRead = () => API.patch('/user/notifications/read');
+export const clearNotifications = () => API.delete('/user/notifications');
 export const markNotificationRead = (notificationId) => API.patch(`/user/notifications/${notificationId}/read`);

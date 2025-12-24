@@ -146,6 +146,26 @@ export const getPostsBySearch = async (req, res) => {
     }
 };
 
+// 3. Get Posts by User
+export const getPostsByUser = async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "Invalid user ID." });
+        }
+
+        const posts = await PostMessage.find({ creator: userId })
+            .populate('creator', 'name picture username')
+            .sort({ createdAt: -1 }); // Most recent first
+
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error("Get posts by user error:", error);
+        res.status(500).json({ message: "Failed to fetch user posts. Please try again." });
+    }
+};
+
 // 4. Create Post with Enhanced Validation
 export const createPost = async (req, res) => {
     const { title, message, tags, selectedFile } = req.body;

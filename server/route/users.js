@@ -5,13 +5,17 @@ import {
     verifyEmail,
     resendOTP,
     googleSignin, 
-    getUser, 
+    getUser,
+    getUserProfile,
+    updateUserProfile,
+    checkUsernameAvailability,
     searchUsers, 
     followUser, 
     unfollowUser,
     updateUser,
     getNotifications, 
     markNotificationsRead,
+    clearNotifications,
     deleteUser 
 } from '../controller/users.js';
 import { markNotificationRead } from '../controller/notifications.js';
@@ -48,8 +52,12 @@ safeRouter.post('/google', googleSignin);
 
 // Specific routes first
 safeRouter.get('/search', searchUsers);
+safeRouter.get('/check-username/:username', checkUsernameAvailability);
+safeRouter.get('/profile/:id', getUserProfile);
+safeRouter.patch('/profile/:id', auth, updateUserProfile);
 safeRouter.get('/notifications', auth, getNotifications); 
 safeRouter.patch('/notifications/read', auth, markNotificationsRead);
+safeRouter.delete('/notifications', auth, clearNotifications);
 safeRouter.patch('/notifications/:id/read', auth, markNotificationRead);
 
 // Dynamic routes last

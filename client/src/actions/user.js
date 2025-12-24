@@ -1,5 +1,5 @@
 import { FETCH_USER, START_LOADING, END_LOADING, FOLLOW } from '../constants/actionTypes';
-import * as api from '../api/index.js';
+import * as api from '../api/index';
 
 export const getUser = (id) => async (dispatch) => {
   try {
@@ -14,15 +14,25 @@ export const getUser = (id) => async (dispatch) => {
 
 export const updateUserProfile = (id, user) => async (dispatch) => {
     try {
-      const { data } = await api.updateUser(id, user);
+      const { data } = await api.updateUserProfile(id, user);
+      
+      // Update Redux state immediately
       dispatch({ type: FETCH_USER, payload: data });
       
       // Update local storage so Navbar avatar updates instantly
       const profile = JSON.parse(localStorage.getItem('profile'));
-      profile.result = { ...profile.result, ...data };
-      localStorage.setItem('profile', JSON.stringify(profile));
+      if (profile && profile.result) {
+        profile.result = { ...profile.result, ...data };
+        localStorage.setItem('profile', JSON.stringify(profile));
+        
+        // Trigger auth state change event for components that listen to it
+        window.dispatchEvent(new CustomEvent('auth-change'));
+      }
+      
+      return data; // Return the updated data
     } catch (error) {
       console.log(error);
+      throw error; // Re-throw so component can handle it
     }
 };
 

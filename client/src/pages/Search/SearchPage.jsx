@@ -4,6 +4,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getPostsBySearch } from '../../actions/posts';
+import { useLanguage } from '../../context/LanguageContext';
 import * as api from '../../api'; 
 import Posts from '../../components/Posts/Posts';
 
@@ -12,6 +13,7 @@ function useQuery() {
 }
 
 const SearchPage = () => {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [foundUsers, setFoundUsers] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -56,11 +58,11 @@ const SearchPage = () => {
         
         {/* HEADER SECTION (Matching your design) */}
         <Typography variant="h3" sx={{ color: 'white', fontWeight: 'bold', mb: 1 }}>
-            Discover
+            {t('discover')}
         </Typography>
         
         <Typography variant="subtitle1" sx={{ color: '#94a3b8', fontStyle: 'italic', mb: 4 }}>
-            "Find people, stories, and ideas that matter to you."
+            {t('findPeopleStories')}
         </Typography>
 
         {/* SEARCH BAR (Matching your design) */}
@@ -68,7 +70,7 @@ const SearchPage = () => {
             <TextField 
                 fullWidth 
                 variant="outlined" 
-                placeholder="Search by Name, Title, or #Tag..."
+                placeholder={t('searchByName')}
                 value={search} 
                 onChange={(e) => setSearch(e.target.value)} 
                 onKeyDown={handleKeyPress}
@@ -107,7 +109,7 @@ const SearchPage = () => {
                 {/* Users Found */}
                 {foundUsers.length > 0 && (
                     <Box mb={5}>
-                        <Typography variant="h5" color="white" fontWeight="bold" mb={2}>People Found</Typography>
+                        <Typography variant="h5" color="white" fontWeight="bold" mb={2}>{t('peopleFound')}</Typography>
                         <Grid container spacing={2}>
                             {foundUsers.map((user) => (
                                 <Grid item key={user._id} xs={12} sm={6}>
@@ -134,7 +136,7 @@ const SearchPage = () => {
                 {/* Posts Found */}
                 <Box>
                     <Typography variant="h5" color="white" fontWeight="bold" mb={2} sx={{ borderBottom: '1px solid #334155', pb: 1 }}>
-                        Posts
+                        {t('posts')}
                     </Typography>
                     <Posts setCurrentId={() => {}} />
                 </Box>
