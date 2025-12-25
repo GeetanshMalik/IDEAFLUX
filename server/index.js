@@ -69,39 +69,6 @@ app.get('/test', (req, res) => {
   });
 });
 
-// Test EmailJS endpoint
-app.get('/test-emailjs/:email', async (req, res) => {
-  const { email } = req.params;
-  try {
-    console.log('🧪 Testing EmailJS to:', email);
-    const { sendOTPEmail, generateOTP } = await import('./utils/emailServiceNew.js');
-    const testOTP = generateOTP();
-
-    const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
-
-    if (emailSent) {
-      res.json({ 
-        success: true, 
-        message: 'EmailJS test successful', 
-        otp: testOTP,
-        email: email
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'EmailJS test failed - Check server logs',
-        email: email
-      });
-    }
-  } catch (error) {
-    console.error('EmailJS test error:', error);
-    res.status(500).json({ 
-      error: 'EmailJS test failed', 
-      details: error.message,
-      email: email
-    });
-  }
-});
-
 app.use('/posts', postRoutes);
 app.use('/user', userRoutes);
 app.use('/message', chatRoutes);
