@@ -76,7 +76,7 @@ export const LanguageProvider = ({ children }) => {
     { code: 'it', name: 'Italian', flag: 'IT', nativeName: 'Italiano' },
     { code: 'pt', name: 'Portuguese', flag: 'PT', nativeName: 'Português' },
     { code: 'ru', name: 'Russian', flag: 'RU', nativeName: 'Русский' },
-    { code: 'bn', name: 'Bengali', flag: 'BD', nativeName: 'বাংলা' },
+    { code: 'bn', name: 'Bengali', flag: 'IN', nativeName: 'বাংলা' },
     { code: 'te', name: 'Telugu', flag: 'IN', nativeName: 'తెలుగు' },
     { code: 'mr', name: 'Marathi', flag: 'IN', nativeName: 'मराठी' },
     { code: 'ta', name: 'Tamil', flag: 'IN', nativeName: 'தமிழ்' },

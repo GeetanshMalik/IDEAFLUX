@@ -52,14 +52,27 @@ const Form = ({ currentId, setCurrentId }) => {
         return alert(t('contentTooShort'));
     }
 
-    if (currentId) {
-      dispatch(updatePost(currentId, { ...postData, name: user?.result?.name }));
-      alert(t('postUpdatedSuccessfully'));
-    } else {
-      dispatch(createPost({ ...postData, name: user?.result?.name }, navigate));
-      alert(t('postPublishedSuccessfully'));
+    try {
+      if (currentId) {
+        dispatch(updatePost(currentId, { ...postData, name: user?.result?.name }));
+        alert(t('postUpdatedSuccessfully'));
+      } else {
+        // Create post and navigate immediately
+        dispatch(createPost({ ...postData, name: user?.result?.name }));
+        
+        // Clear form and navigate immediately
+        clear();
+        navigate('/posts');
+        
+        // Dispatch custom event to refresh home page
+        window.dispatchEvent(new CustomEvent('post-created'));
+        
+        console.log('✅ Post published successfully');
+      }
+    } catch (error) {
+      console.error('Post submission error:', error);
+      alert('Failed to publish post. Please try again.');
     }
-    clear();
   };
 
   // --- TAG HANDLING ---

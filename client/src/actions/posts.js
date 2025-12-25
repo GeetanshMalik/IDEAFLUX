@@ -58,16 +58,23 @@ export const getPostsByUser = (userId) => async (dispatch) => {
   }
 };
 
-export const createPost = (post, navigate) => async (dispatch) => {
+export const createPost = (post) => async (dispatch) => {
   try {
     dispatch({ type: START_LOADING });
     const { data } = await api.createPost(post);
 
-    navigate(`/posts/${data._id}`);
-
+    // Add the new post to the state immediately
     dispatch({ type: CREATE, payload: data });
+    dispatch({ type: END_LOADING });
+    
+    // Show success message
+    console.log('✅ Post created successfully');
+    
+    return data; // Return the created post
   } catch (error) {
-    console.log(error);
+    dispatch({ type: END_LOADING });
+    console.error('❌ Post creation failed:', error);
+    throw error; // Re-throw to handle in component
   }
 };
 
