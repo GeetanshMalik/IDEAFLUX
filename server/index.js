@@ -59,6 +59,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test endpoint to verify frontend-backend connection
+app.get('/test', (req, res) => {
+  console.log('🧪 Test endpoint hit from:', req.ip);
+  res.status(200).json({ 
+    message: 'Backend is working!',
+    timestamp: new Date().toISOString(),
+    ip: req.ip
+  });
+});
+
 app.use('/posts', postRoutes);
 app.use('/user', userRoutes);
 app.use('/message', chatRoutes);
