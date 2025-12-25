@@ -14,13 +14,6 @@ import chatRoutes from './route/chat.js';
 // Load environment variables
 dotenv.config();
 
-// Debug: Check if environment variables are loaded
-console.log('🔍 Environment Variables Check:');
-console.log('EMAIL_USER:', process.env.EMAIL_USER || 'Not set');
-console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (' + process.env.EMAIL_PASS.substring(0, 4) + '...)' : 'Not set');
-console.log('NODE_ENV:', process.env.NODE_ENV || 'Not set');
-console.log('CONNECTION_URL:', process.env.CONNECTION_URL ? 'Set (MongoDB)' : 'Not set');
-
 const app = express();
 
 // Security middleware
@@ -89,111 +82,6 @@ app.post('/test-notification', (req, res) => {
     res.json({ success: true, message: 'Test notification sent' });
   } else {
     res.status(400).json({ error: 'Socket not available or userId missing' });
-  }
-});
-
-// Test email endpoint
-app.post('/test-email', async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
-
-  try {
-    const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
-    const testOTP = generateOTP();
-    console.log('🧪 Testing email to:', email, 'with OTP:', testOTP);
-
-    const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
-
-    if (emailSent) {
-      res.json({ success: true, message: 'Test email sent successfully', otp: testOTP });
-    } else {
-      res.status(500).json({ error: 'Failed to send test email - check server logs' });
-    }
-  } catch (error) {
-    console.error('Test email error:', error);
-    res.status(500).json({ error: 'Test email failed', details: error.message });
-  }
-});
-
-// Simple email config check endpoint
-app.get('/check-email-config', (req, res) => {
-  const hasEmailUser = !!process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_gmail@gmail.com';
-  const hasEmailPass = !!process.env.EMAIL_PASS && process.env.EMAIL_PASS !== 'your_gmail_app_password';
-
-  res.json({
-    configured: hasEmailUser && hasEmailPass,
-    emailUser: hasEmailUser ? process.env.EMAIL_USER : 'Not configured',
-    emailPassLength: hasEmailPass ? process.env.EMAIL_PASS.replace(/\s/g, '').length : 0,
-    message: hasEmailUser && hasEmailPass ? 'Email configuration looks good' : 'Email configuration incomplete'
-  });
-});
-
-// Test email endpoint (GET method for easy browser testing)
-app.get('/test-email/:email', async (req, res) => {
-  const { email } = req.params;
-  try {
-    console.log('🧪 Testing Gmail SMTP to:', email);
-    const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
-    const testOTP = generateOTP();
-
-    const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
-
-    if (emailSent) {
-      res.json({ 
-        success: true, 
-        message: 'Gmail SMTP email sent successfully', 
-        otp: testOTP,
-        service: 'Gmail SMTP',
-        email: email
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Failed to send Gmail SMTP email - Check server logs for details',
-        service: 'Gmail SMTP',
-        email: email,
-        troubleshooting: {
-          checkEmailConfig: 'Verify EMAIL_USER and EMAIL_PASS in .env',
-          checkGmailSettings: 'Enable 2FA and use App Password',
-          checkNetworkAccess: 'Ensure SMTP ports are not blocked'
-        }
-      });
-    }
-  } catch (error) {
-    console.error('Gmail SMTP test error:', error);
-    res.status(500).json({ 
-      error: 'Gmail SMTP test failed', 
-      details: error.message,
-      service: 'Gmail SMTP',
-      email: email
-    });
-  }
-});
-
-// Debug endpoint to get current OTP for testing (REMOVE IN PRODUCTION)
-app.get('/debug/otp/:email', async (req, res) => {
-  const { email } = req.params;
-  try {
-    const { default: EmailVerification } = await import('./model/emailVerification.js');
-    const verification = await EmailVerification.findOne({ email: email.toLowerCase() });
-    
-    if (!verification) {
-      return res.status(404).json({ error: 'No verification record found for this email' });
-    }
-
-    res.status(200).json({
-      email: verification.email,
-      otp: verification.otp,
-      name: verification.name,
-      attempts: verification.attempts,
-      createdAt: verification.createdAt,
-      expiresAt: new Date(verification.createdAt.getTime() + 5 * 60 * 1000), // 5 minutes from creation
-      message: 'DEBUG: Use this OTP to verify your email. This endpoint should be removed in production.'
-    });
-  } catch (error) {
-    console.error('Debug OTP error:', error);
-    res.status(500).json({ error: 'Failed to get OTP', details: error.message });
   }
 });
 
