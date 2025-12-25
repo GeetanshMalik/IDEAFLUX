@@ -9,6 +9,7 @@ import Input from './Input';
 import { signin, signup } from '../../actions/auth';
 import * as api from '../../api';
 import { useLanguage } from '../../context/LanguageProvider';
+import { generateOTP, sendOTPEmail } from '../../utils/emailService';
 
 const Auth = () => {
   const { t } = useLanguage();
@@ -33,7 +34,19 @@ const Auth = () => {
     
     try {
       if (isSignup) {
-        await dispatch(signup(form, navigate));
+        // Generate OTP and send email via EmailJS (frontend)
+        const otp = generateOTP();
+        console.log('📧 Generated OTP:', otp);
+        
+        // Send email using EmailJS from frontend
+        const emailSent = await sendOTPEmail(form.email, otp, `${form.firstName} ${form.lastName}`);
+        
+        if (emailSent) {
+          // Email sent successfully, now send signup data with OTP to server
+          await dispatch(signup({ ...form, otp }, navigate));
+        } else {
+          alert('Failed to send verification email. Please try again.');
+        }
       } else {
         await dispatch(signin(form, navigate));
       }

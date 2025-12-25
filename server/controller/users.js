@@ -1,96 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import crypto from "crypto";
 
 import User from "../model/user.js";
 import Notification from "../model/notification.js";
 import EmailVerification from "../model/emailVerification.js";
-
-// Inline email functions to avoid import caching issues
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-const sendOTPEmail = async (email, otp, name) => {
-  try {
-    console.log('📧 EmailJS delivery to:', email);
-    console.log('🔢 OTP:', otp);
-    
-    console.log('🔍 Environment Check:');
-    console.log('- SERVICE_ID_1:', !!process.env.EMAILJS_SERVICE_ID_1);
-    console.log('- TEMPLATE_ID_1:', !!process.env.EMAILJS_TEMPLATE_ID_1);
-    console.log('- PUBLIC_KEY_1:', !!process.env.EMAILJS_PUBLIC_KEY_1);
-    
-    const accounts = [
-      {
-        service_id: process.env.EMAILJS_SERVICE_ID_1,
-        template_id: process.env.EMAILJS_TEMPLATE_ID_1,
-        public_key: process.env.EMAILJS_PUBLIC_KEY_1,
-        name: 'Primary'
-      },
-      {
-        service_id: process.env.EMAILJS_SERVICE_ID_2,
-        template_id: process.env.EMAILJS_TEMPLATE_ID_2,
-        public_key: process.env.EMAILJS_PUBLIC_KEY_2,
-        name: 'Secondary'
-      }
-    ].filter(acc => acc.service_id && acc.template_id && acc.public_key);
-
-    if (accounts.length === 0) {
-      console.error('❌ No EmailJS accounts configured');
-      return false;
-    }
-
-    console.log(`📧 ${accounts.length} EmailJS accounts ready`);
-
-    for (const account of accounts) {
-      try {
-        console.log(`📧 Trying ${account.name}...`);
-        
-        const emailData = {
-          service_id: account.service_id,
-          template_id: account.template_id,
-          user_id: account.public_key,
-          template_params: {
-            to_email: email,
-            to_name: name,
-            otp: otp,
-            app_name: 'IdeaFlux',
-            from_name: 'IdeaFlux Team'
-          }
-        };
-
-        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(emailData)
-        });
-
-        if (response.ok) {
-          console.log(`✅ Email sent via ${account.name}`);
-          return true;
-        } else {
-          const errorText = await response.text();
-          console.log(`⚠️ ${account.name} failed (${response.status}): ${errorText}`);
-          continue;
-        }
-      } catch (error) {
-        console.log(`❌ ${account.name} error: ${error.message}`);
-        continue;
-      }
-    }
-
-    console.error('❌ All EmailJS accounts failed');
-    return false;
-    
-  } catch (error) {
-    console.error('❌ EmailJS system error:', error.message);
-    return false;
-  }
-};
 
 // Input validation helper
 const validateEmail = (email) => {
@@ -152,17 +66,17 @@ export const signin = async (req, res) => {
   }
 };
 
-// Step 1: Initial signup - send OTP
+// Step 1: Initial signup - store user data and OTP
 export const signup = async (req, res) => {
-  const { email, password, confirmPassword, firstName, lastName } = req.body;
+  const { email, password, confirmPassword, firstName, lastName, otp } = req.body;
   
   try {
     console.log('📝 Signup attempt for:', email);
     
     // Input validation
-    if (!email || !password || !confirmPassword || !firstName || !lastName) {
+    if (!email || !password || !confirmPassword || !firstName || !lastName || !otp) {
       console.log('❌ Missing required fields');
-      return res.status(400).json({ message: "All fields are required." });
+      return res.status(400).json({ message: "All fields including OTP are required." });
     }
 
     if (!validateEmail(email)) {
@@ -186,48 +100,28 @@ export const signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists with this email." });
     }
 
-    console.log('✅ Validation passed, creating verification record');
+    console.log('✅ Validation passed, storing verification record');
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
     
-    // Generate OTP and store verification data
-    const otp = generateOTP();
-    console.log('🔢 Generated OTP:', otp);
-    
-    // Store verification data temporarily
+    // Store verification data with frontend-provided OTP
     const verificationRecord = await EmailVerification.create({
       email: email.toLowerCase(),
       password: hashedPassword,
       name: fullName,
-      otp,
+      otp: otp.toString(),
       attempts: 0
     });
     console.log('✅ Verification record created with ID:', verificationRecord._id);
 
-    // Send OTP email in background (non-blocking but with better error handling)
-    console.log('📧 Attempting to send email in background...');
-    
-    // Don't wait for email, but log the result
-    sendOTPEmail(email, otp, fullName)
-      .then((emailSent) => {
-        if (emailSent) {
-          console.log('✅ Email sent successfully to:', email);
-        } else {
-          console.log('⚠️ Email sending failed for:', email, '- user can use resend OTP');
-        }
-      })
-      .catch((emailError) => {
-        console.error('⚠️ Email sending error for:', email, emailError.message);
-      });
-
-    // Always respond immediately for fast UI (after database record is created)
-    console.log('✅ Signup successful, responding immediately');
+    // Respond immediately - email was sent by frontend
+    console.log('✅ Signup successful, OTP stored');
     res.status(200).json({ 
       requiresVerification: true,
       email: email.toLowerCase(),
-      message: "Please check your email for the verification code. If you don't receive it, use the resend option." 
+      message: "Please check your email for the verification code." 
     });
 
   } catch (error) {
@@ -296,13 +190,13 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-// Resend OTP
+// Resend OTP - frontend will handle email sending
 export const resendOTP = async (req, res) => {
-  const { email } = req.body;
+  const { email, otp } = req.body;
   
   try {
-    if (!email) {
-      return res.status(400).json({ message: "Email is required." });
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and new OTP are required." });
     }
 
     const verification = await EmailVerification.findOne({ email: email.toLowerCase() });
@@ -311,33 +205,18 @@ export const resendOTP = async (req, res) => {
       return res.status(400).json({ message: "No pending verification found. Please signup again." });
     }
 
-    // Generate new OTP
-    const newOTP = generateOTP();
-    verification.otp = newOTP;
+    // Update with new OTP provided by frontend
+    verification.otp = otp.toString();
     verification.attempts = 0;
     verification.createdAt = new Date();
     await verification.save();
     
-    console.log('🔢 New OTP generated for:', email, '- OTP:', newOTP);
+    console.log('🔢 New OTP stored for:', email, '- OTP:', otp);
 
-    // Respond immediately for fast UI
+    // Respond immediately - frontend handles email sending
     res.status(200).json({ 
-      message: "New verification code sent to your email." 
+      message: "New verification code has been sent to your email." 
     });
-
-    // Send new OTP in background (non-blocking)
-    console.log('📧 Sending resend OTP email in background...');
-    sendOTPEmail(email, newOTP, verification.name)
-      .then((emailSent) => {
-        if (emailSent) {
-          console.log('✅ Resend OTP email sent successfully to:', email);
-        } else {
-          console.log('⚠️ Resend OTP email failed for:', email);
-        }
-      })
-      .catch((emailError) => {
-        console.error('⚠️ Resend OTP email error for:', email, emailError.message);
-      });
 
   } catch (error) {
     console.error("Resend OTP error:", error);
