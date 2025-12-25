@@ -6,7 +6,7 @@ import User from "../model/user.js";
 import Notification from "../model/notification.js";
 import EmailVerification from "../model/emailVerification.js";
 // import { pushNotification } from "../socket.js"; // Not needed - using global.io approach
-import { generateOTP, sendOTPEmail } from "../utils/emailService.js"; // Use Gmail service only
+import { generateOTP, sendOTPEmail } from "../utils/emailServiceNew.js";
 
 // Input validation helper
 const validateEmail = (email) => {

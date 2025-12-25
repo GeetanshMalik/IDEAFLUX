@@ -74,7 +74,7 @@ app.get('/test-emailjs/:email', async (req, res) => {
   const { email } = req.params;
   try {
     console.log('🧪 Testing EmailJS to:', email);
-    const { sendOTPEmail, generateOTP } = await import('./utils/emailService.js');
+    const { sendOTPEmail, generateOTP } = await import('./utils/emailServiceNew.js');
     const testOTP = generateOTP();
 
     const emailSent = await sendOTPEmail(email, testOTP, 'Test User');
