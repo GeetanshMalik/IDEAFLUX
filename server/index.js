@@ -38,6 +38,8 @@ const corsOptions = {
     'http://localhost:3000',
     'https://ideaflux-nine.vercel.app',
     'https://www.ideaflux-nine.vercel.app',
+    'https://ideaflux-frontend.vercel.app', // Add correct frontend URL
+    'https://ideaflux.vercel.app', // Alternative frontend URL
     'https://ideaflux-backend.vercel.app', // Add Vercel backend URL
     process.env.CLIENT_URL
   ].filter(Boolean),

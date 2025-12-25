@@ -121,7 +121,6 @@ const Navbar = () => {
     };
     window.addEventListener('notifications-updated', handleNotificationUpdate);
 
-    console.log('🔌 Navbar connecting to socket:', ENDPOINT);
     const socket = io(ENDPOINT, {
       transports: ['websocket', 'polling'],
       timeout: 5000
@@ -130,11 +129,10 @@ const Navbar = () => {
     socket.emit("setup", { _id: user.result._id });
     
     socket.on('connected', () => {
-      console.log('✅ Navbar socket setup confirmed');
+      // Socket connected successfully
     });
 
     const handleNavbarNotification = (newNotif) => {
-      console.log('🔔 Notification received in Navbar:', newNotif);
       setNotificationCount((prev) => prev + 1);
       setSnackbarMsg(`New notification from ${newNotif.sender?.name || 'Someone'}`);
       setOpenSnackbar(true);
@@ -250,15 +248,9 @@ const Navbar = () => {
                         PaperProps={{ sx: { bgcolor: '#1e293b', color: 'white', border: '1px solid #334155' } }}
                     >
                         <MenuItem onClick={() => { 
-                          console.log('Profile menu clicked'); 
-                          console.log('User object:', user); 
-                          console.log('User ID:', user?.result?._id);
                           const profileUserId = user?.result?._id;
                           if (profileUserId) {
-                            console.log('Navigating to profile:', `/profile/${profileUserId}`);
                             navigate(`/profile/${profileUserId}`); 
-                          } else {
-                            console.error('No user ID found for profile navigation');
                           }
                           handleClose(); 
                         }}>

@@ -6,7 +6,11 @@ export const initSocket = (server) => {
   io = new Server(server, {
     pingTimeout: 60000,
     cors: {
-      origin: "http://localhost:3000", // Make sure this matches your Client URL
+      origin: [
+        "http://localhost:3000", // Development
+        "https://ideaflux-frontend.vercel.app", // Production frontend
+        "https://ideaflux.vercel.app" // Alternative production URL
+      ],
       methods: ["GET", "POST"],
       credentials: true,
     },

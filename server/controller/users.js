@@ -117,7 +117,6 @@ export const signup = async (req, res) => {
     console.log('✅ Verification record created with ID:', verificationRecord._id);
 
     // Respond immediately - email was sent by frontend
-    console.log('✅ Signup successful, OTP stored');
     res.status(200).json({ 
       requiresVerification: true,
       email: email.toLowerCase(),
@@ -210,8 +209,6 @@ export const resendOTP = async (req, res) => {
     verification.attempts = 0;
     verification.createdAt = new Date();
     await verification.save();
-    
-    console.log('🔢 New OTP stored for:', email, '- OTP:', otp);
 
     // Respond immediately - frontend handles email sending
     res.status(200).json({ 

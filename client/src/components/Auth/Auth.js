@@ -36,7 +36,6 @@ const Auth = () => {
       if (isSignup) {
         // Generate OTP and send email via EmailJS (frontend)
         const otp = generateOTP();
-        console.log('📧 Generated OTP:', otp);
         
         // Send email using EmailJS from frontend
         const emailSent = await sendOTPEmail(form.email, otp, `${form.firstName} ${form.lastName}`);
