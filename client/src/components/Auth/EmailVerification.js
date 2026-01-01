@@ -14,6 +14,7 @@ import { useDispatch } from 'react-redux';
 import * as api from '../../api';
 import { useNotification } from '../Notification/NotificationSystem';
 import { useLanguage } from '../../context/LanguageProvider';
+import { sendOTPEmailFallback } from '../../utils/emailService';
 
 const EmailVerification = () => {
   const { t } = useLanguage();
@@ -84,7 +85,21 @@ const EmailVerification = () => {
     setError('');
 
     try {
-      await api.resendOTP({ email });
+      const response = await api.resendOTP({ email });
+      
+      if (response.data.emailMethod === 'frontend_fallback') {
+        // Backend email services failed, use frontend EmailJS
+        const emailSent = await sendOTPEmailFallback(
+          email, 
+          response.data.otp, 
+          'User' // We don't have the name here, so use generic
+        );
+        
+        if (!emailSent) {
+          throw new Error('Failed to send verification email via fallback method');
+        }
+      }
+      
       showSuccess('New verification code sent to your email!');
       setCountdown(60); // 60 second cooldown
     } catch (error) {

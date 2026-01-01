@@ -71,6 +71,16 @@ app.get('/test', (req, res) => {
   });
 });
 
+// Test socket connection endpoint
+app.get('/test-socket', (req, res) => {
+  console.log('🔌 Socket test endpoint hit');
+  res.status(200).json({ 
+    message: 'Socket server is running',
+    connectedClients: global.io ? global.io.engine.clientsCount : 0,
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/posts', postRoutes);
 app.use('/user', userRoutes);
 app.use('/message', chatRoutes);
@@ -120,25 +130,36 @@ connectDB().then(() => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 
-  // Socket.io configuration
+  // Socket.io configuration - WebSocket FIRST for real-time performance
   const io = new Server(server, {
     pingTimeout: 60000,
+    pingInterval: 25000,
     cors: corsOptions,
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+    allowEIO3: true,
+    // WebSocket optimizations
+    upgradeTimeout: 30000,
+    maxHttpBufferSize: 1e6,
+    allowUpgrades: true
   });
 
   // Make io globally available
   global.io = io;
 
-  // Socket.io event handlers
+  // Socket.io event handlers with better debugging
   io.on("connection", (socket) => {
-    console.log(`✅ User connected: ${socket.id}`);
+    console.log(`✅ User connected: ${socket.id} (Transport: ${socket.conn.transport.name})`);
+
+    // Log transport upgrades
+    socket.conn.on('upgrade', () => {
+      console.log(`🔄 Transport upgraded to: ${socket.conn.transport.name} for ${socket.id}`);
+    });
 
     socket.on("setup", (userData) => {
       if (userData?._id) {
         socket.join(userData._id);
         socket.emit("connected");
-        console.log(`👤 User ${userData._id} joined their room (Socket: ${socket.id})`);
+        console.log(`👤 User ${userData._id} joined their room (Socket: ${socket.id}, Transport: ${socket.conn.transport.name})`);
         // Store user info on socket for debugging
         socket.userId = userData._id;
       }
@@ -147,7 +168,7 @@ connectDB().then(() => {
     socket.on("join chat", (room) => {
       if (room) {
         socket.join(room);
-        console.log(`💬 User joined chat: ${room}`);
+        console.log(`💬 User joined chat: ${room} (Transport: ${socket.conn.transport.name})`);
       }
     });
 
@@ -156,33 +177,44 @@ connectDB().then(() => {
         const chat = newMessageReceived.chat;
         if (!chat?.users) return;
 
+        console.log(`📨 Broadcasting message from ${newMessageReceived.sender._id} to ${chat.users.length} users`);
+
         chat.users.forEach((user) => {
           if (user._id === newMessageReceived.sender._id) return;
 
           // Send to Chat Window
           socket.in(user._id).emit("message received", newMessageReceived);
+          console.log(`💬 Message sent to user ${user._id}`);
 
           // Send to Notification Bell
-          socket.in(user._id).emit("notification received", {
+          const notification = {
             user: user._id,
             sender: newMessageReceived.sender,
             type: 'message',
             message: `Sent you a message.`,
             read: false,
             createdAt: new Date()
-          });
+          };
+          
+          socket.in(user._id).emit("notification received", notification);
+          console.log(`🔔 Message notification sent to user ${user._id}`);
         });
       } catch (error) {
         console.error('Socket message error:', error);
       }
     });
 
-    socket.on("disconnect", () => {
-      console.log(`❌ User disconnected: ${socket.id}`);
+    socket.on("disconnect", (reason) => {
+      console.log(`❌ User disconnected: ${socket.id} (Reason: ${reason})`);
     });
 
     socket.on("error", (error) => {
-      console.error('Socket error:', error);
+      console.error(`🚨 Socket error for ${socket.id}:`, error);
+    });
+
+    // Ping-pong for connection health
+    socket.on('ping', () => {
+      socket.emit('pong');
     });
   });
 

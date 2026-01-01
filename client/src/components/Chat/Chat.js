@@ -25,15 +25,31 @@ const Chat = () => {
     if (!user?.result?._id) return;
 
     const newSocket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'], // Prefer websocket for speed
-      timeout: 5000,
-      forceNew: true
+      transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+      timeout: 10000,
+      forceNew: false, // Don't force new connection - reuse existing
+      upgrade: true,
+      rememberUpgrade: true
+    });
+
+    // Debug connection events
+    newSocket.on('connect', () => {
+      console.log('🔌 Chat socket connected:', newSocket.id, 'Transport:', newSocket.io.engine.transport.name);
+    });
+    
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Chat socket connection error:', error);
+    });
+    
+    // Log transport upgrades
+    newSocket.io.engine.on('upgrade', () => {
+      console.log('🔄 Chat transport upgraded to:', newSocket.io.engine.transport.name);
     });
 
     newSocket.emit("setup", { _id: user.result._id });
 
     newSocket.on("connected", () => {
-      console.log("✅ Socket connected successfully");
+      console.log("✅ Chat socket setup confirmed for user:", user.result._id);
       setLoading(false);
     });
 

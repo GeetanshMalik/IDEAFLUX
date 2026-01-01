@@ -35,11 +35,12 @@ const NotificationsPage = () => {
   useEffect(() => {
     if (!user?.result?._id) return;
 
-    console.log('🔌 Connecting to notifications socket:', ENDPOINT);
     const socket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'],
-      timeout: 5000,
-      forceNew: false // Don't force new connection
+      transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+      timeout: 10000,
+      upgrade: true,
+      rememberUpgrade: true,
+      forceNew: false // Don't force new connection - reuse existing
     });
 
     socket.emit("setup", { _id: user.result._id });

@@ -9,7 +9,7 @@ import Input from './Input';
 import { signin, signup } from '../../actions/auth';
 import * as api from '../../api';
 import { useLanguage } from '../../context/LanguageProvider';
-import { generateOTP, sendOTPEmail } from '../../utils/emailService';
+import { sendOTPEmailFallback } from '../../utils/emailService';
 
 const Auth = () => {
   const { t } = useLanguage();
@@ -34,23 +34,37 @@ const Auth = () => {
     
     try {
       if (isSignup) {
-        // Generate OTP and send email via EmailJS (frontend)
-        const otp = generateOTP();
+        // Try backend-first hybrid email system
+        const response = await api.signUp(form);
         
-        // Send email using EmailJS from frontend
-        const emailSent = await sendOTPEmail(form.email, otp, `${form.firstName} ${form.lastName}`);
-        
-        if (emailSent) {
-          // Email sent successfully, now send signup data with OTP to server
-          await dispatch(signup({ ...form, otp }, navigate));
-        } else {
-          alert('Failed to send verification email. Please try again.');
+        if (response.data.emailMethod === 'frontend_fallback') {
+          // Backend email services failed, use frontend EmailJS
+          const emailSent = await sendOTPEmailFallback(
+            form.email, 
+            response.data.otp, 
+            `${form.firstName} ${form.lastName}`
+          );
+          
+          if (!emailSent) {
+            alert('Failed to send verification email. Please try again.');
+            setLoading(false);
+            return;
+          }
         }
+        
+        // Navigate to email verification page
+        navigate('/verify-email', { 
+          state: { 
+            email: response.data.email,
+            emailMethod: response.data.emailMethod 
+          } 
+        });
       } else {
         await dispatch(signin(form, navigate));
       }
     } catch (error) {
       console.error('Auth error:', error);
+      alert(error.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

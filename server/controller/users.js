@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import User from "../model/user.js";
 import Notification from "../model/notification.js";
 import EmailVerification from "../model/emailVerification.js";
+import { generateOTP, sendOTPEmail } from "../utils/emailService.js";
 
 // Input validation helper
 const validateEmail = (email) => {
@@ -66,47 +67,44 @@ export const signin = async (req, res) => {
   }
 };
 
-// Step 1: Initial signup - store user data and OTP
+// Step 1: Initial signup - generate OTP and try backend email services
 export const signup = async (req, res) => {
-  const { email, password, confirmPassword, firstName, lastName, otp } = req.body;
+  const { email, password, confirmPassword, firstName, lastName } = req.body;
   
   try {
-    console.log('📝 Signup attempt for:', email);
-    
     // Input validation
-    if (!email || !password || !confirmPassword || !firstName || !lastName || !otp) {
-      console.log('❌ Missing required fields');
-      return res.status(400).json({ message: "All fields including OTP are required." });
+    if (!email || !password || !confirmPassword || !firstName || !lastName) {
+      return res.status(400).json({ message: "All fields are required." });
     }
 
     if (!validateEmail(email)) {
-      console.log('❌ Invalid email format');
       return res.status(400).json({ message: "Please provide a valid email address." });
     }
 
     if (!validatePassword(password)) {
-      console.log('❌ Invalid password');
       return res.status(400).json({ message: "Password must be at least 6 characters long." });
     }
 
     if (password !== confirmPassword) {
-      console.log('❌ Passwords do not match');
       return res.status(400).json({ message: "Passwords don't match." });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      console.log('❌ User already exists');
       return res.status(400).json({ message: "User already exists with this email." });
     }
 
-    console.log('✅ Validation passed, storing verification record');
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
+    // Generate OTP and try backend email services
+    const otp = generateOTP();
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
     
-    // Store verification data with frontend-provided OTP
+    // Try backend email services (Gmail SMTP -> Resend)
+    const emailResult = await sendOTPEmail(email, otp, fullName);
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+    
+    // Store verification data
     const verificationRecord = await EmailVerification.create({
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -114,17 +112,28 @@ export const signup = async (req, res) => {
       otp: otp.toString(),
       attempts: 0
     });
-    console.log('✅ Verification record created with ID:', verificationRecord._id);
 
-    // Respond immediately - email was sent by frontend
-    res.status(200).json({ 
-      requiresVerification: true,
-      email: email.toLowerCase(),
-      message: "Please check your email for the verification code." 
-    });
+    if (emailResult.success) {
+      // Backend email service worked
+      res.status(200).json({ 
+        requiresVerification: true,
+        email: email.toLowerCase(),
+        emailMethod: emailResult.method,
+        message: "Please check your email for the verification code." 
+      });
+    } else {
+      // Backend failed, return OTP for frontend EmailJS fallback
+      res.status(200).json({ 
+        requiresVerification: true,
+        email: email.toLowerCase(),
+        otp: otp, // Frontend will use this for EmailJS
+        emailMethod: 'frontend_fallback',
+        message: "Please check your email for the verification code." 
+      });
+    }
 
   } catch (error) {
-    console.error("❌ Signup error:", error);
+    console.error("Signup error:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 };
@@ -189,13 +198,13 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-// Resend OTP - frontend will handle email sending
+// Resend OTP - try backend services first, fallback to frontend
 export const resendOTP = async (req, res) => {
-  const { email, otp } = req.body;
+  const { email } = req.body;
   
   try {
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email and new OTP are required." });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
     }
 
     const verification = await EmailVerification.findOne({ email: email.toLowerCase() });
@@ -204,16 +213,32 @@ export const resendOTP = async (req, res) => {
       return res.status(400).json({ message: "No pending verification found. Please signup again." });
     }
 
-    // Update with new OTP provided by frontend
-    verification.otp = otp.toString();
+    // Generate new OTP
+    const newOTP = generateOTP();
+    
+    // Try backend email services
+    const emailResult = await sendOTPEmail(email, newOTP, verification.name);
+    
+    // Update verification record
+    verification.otp = newOTP.toString();
     verification.attempts = 0;
     verification.createdAt = new Date();
     await verification.save();
 
-    // Respond immediately - frontend handles email sending
-    res.status(200).json({ 
-      message: "New verification code has been sent to your email." 
-    });
+    if (emailResult.success) {
+      // Backend email service worked
+      res.status(200).json({ 
+        message: "New verification code has been sent to your email.",
+        emailMethod: emailResult.method
+      });
+    } else {
+      // Backend failed, return OTP for frontend EmailJS fallback
+      res.status(200).json({ 
+        message: "New verification code has been sent to your email.",
+        otp: newOTP, // Frontend will use this for EmailJS
+        emailMethod: 'frontend_fallback'
+      });
+    }
 
   } catch (error) {
     console.error("Resend OTP error:", error);

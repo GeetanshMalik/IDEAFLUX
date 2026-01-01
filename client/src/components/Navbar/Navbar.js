@@ -122,17 +122,44 @@ const Navbar = () => {
     window.addEventListener('notifications-updated', handleNotificationUpdate);
 
     const socket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'],
-      timeout: 5000
+      transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+      timeout: 10000,
+      forceNew: false, // Don't force new connection - reuse existing
+      upgrade: true,
+      rememberUpgrade: true
+    });
+    
+    // Debug connection events
+    socket.on('connect', () => {
+      console.log('🔌 Navbar socket connected:', socket.id, 'Transport:', socket.io.engine.transport.name);
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('❌ Navbar socket connection error:', error);
+    });
+    
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 Navbar socket disconnected:', reason);
+    });
+    
+    // Log transport upgrades
+    socket.io.engine.on('upgrade', () => {
+      console.log('🔄 Navbar transport upgraded to:', socket.io.engine.transport.name);
     });
     
     socket.emit("setup", { _id: user.result._id });
     
     socket.on('connected', () => {
-      // Socket connected successfully
+      console.log('✅ Navbar socket setup confirmed for user:', user.result._id);
     });
 
     const handleNavbarNotification = (newNotif) => {
+      // Ignore system test notifications
+      if (newNotif.type === 'system' && newNotif.message?.includes('connection established')) {
+        return;
+      }
+      
+      console.log('🔔 Notification received in Navbar:', newNotif);
       setNotificationCount((prev) => prev + 1);
       setSnackbarMsg(`New notification from ${newNotif.sender?.name || 'Someone'}`);
       setOpenSnackbar(true);

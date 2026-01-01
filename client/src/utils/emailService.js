@@ -1,12 +1,12 @@
-import emailjs from 'emailjs-com';
+import emailjs from '@emailjs/browser';
 
-// Generate OTP
+// Generate OTP (frontend fallback)
 export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Send OTP email using EmailJS (frontend)
-export const sendOTPEmail = async (email, otp, name) => {
+// PRIORITY 3: EmailJS (Frontend fallback when backend methods fail)
+export const sendOTPEmailFallback = async (email, otp, name) => {
   try {
     // EmailJS accounts with rotation
     const emailJSAccounts = [
