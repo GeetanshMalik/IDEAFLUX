@@ -17,7 +17,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import PersonIcon from '@mui/icons-material/Person';
 
-// Your Vercel URL
+// My Heroku backend URL
 const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
 
 const Navbar = () => {
@@ -122,14 +122,14 @@ const Navbar = () => {
     window.addEventListener('notifications-updated', handleNotificationUpdate);
 
     const socket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+      transports: ['websocket', 'polling'], // WebSocket first, polling backup
       timeout: 10000,
-      forceNew: false, // Don't force new connection - reuse existing
+      forceNew: false, // Reuse connections for efficiency
       upgrade: true,
       rememberUpgrade: true
     });
     
-    // Debug connection events
+    // My connection debugging
     socket.on('connect', () => {
       console.log('🔌 Navbar socket connected:', socket.id, 'Transport:', socket.io.engine.transport.name);
     });
@@ -142,7 +142,7 @@ const Navbar = () => {
       console.log('🔌 Navbar socket disconnected:', reason);
     });
     
-    // Log transport upgrades
+    // Log my transport upgrades
     socket.io.engine.on('upgrade', () => {
       console.log('🔄 Navbar transport upgraded to:', socket.io.engine.transport.name);
     });
@@ -154,7 +154,7 @@ const Navbar = () => {
     });
 
     const handleNavbarNotification = (newNotif) => {
-      // Ignore system test notifications
+      // Filter out my system test notifications
       if (newNotif.type === 'system' && newNotif.message?.includes('connection established')) {
         return;
       }
@@ -167,7 +167,7 @@ const Navbar = () => {
 
     socket.on("notification received", handleNavbarNotification);
 
-    // Cleanup to prevent duplicate listeners
+    // My cleanup to prevent duplicate listeners
     return () => {
       socket.off("notification received", handleNavbarNotification);
       window.removeEventListener('notifications-updated', handleNotificationUpdate);

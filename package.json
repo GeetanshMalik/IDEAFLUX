@@ -1,17 +1,22 @@
 {
-  "name": "ideaflow",
+  "name": "ideaflux",
   "version": "1.0.0",
-  "description": "IdeaFlux - MERN Blogging Platform",
+  "description": "IdeaFlux - MERN Blogging Platform with Real-time Features",
   "main": "server/index.js",
   "scripts": {
-    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "install-all": "npm install && cd client && npm install && cd server && npm install",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
-    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "cd server && npm install",
-    "vercel-build": "cd server && npm install"
+    "start": "cd server && npm start",
+    "heroku-postbuild": "cd server && npm install"
   },
-  "author": "",
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
+  "author": "Geetansh Malik",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.0"

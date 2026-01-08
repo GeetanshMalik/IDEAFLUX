@@ -25,14 +25,14 @@ const Chat = () => {
     if (!user?.result?._id) return;
 
     const newSocket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+      transports: ['websocket', 'polling'], // WebSocket first, polling backup
       timeout: 10000,
-      forceNew: false, // Don't force new connection - reuse existing
+      forceNew: false, // Reuse connections for efficiency
       upgrade: true,
       rememberUpgrade: true
     });
 
-    // Debug connection events
+    // My connection debugging
     newSocket.on('connect', () => {
       console.log('🔌 Chat socket connected:', newSocket.id, 'Transport:', newSocket.io.engine.transport.name);
     });
@@ -41,7 +41,7 @@ const Chat = () => {
       console.error('❌ Chat socket connection error:', error);
     });
     
-    // Log transport upgrades
+    // Log my transport upgrades
     newSocket.io.engine.on('upgrade', () => {
       console.log('🔄 Chat transport upgraded to:', newSocket.io.engine.transport.name);
     });

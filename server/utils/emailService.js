@@ -1,12 +1,12 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 
-// Generate OTP function
+// My OTP generator
 export function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// PRIORITY 1: Gmail SMTP using Nodemailer
+// My Gmail SMTP service
 async function sendViaGmailSMTP(email, otp, name) {
   try {
     if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
@@ -64,7 +64,7 @@ async function sendViaGmailSMTP(email, otp, name) {
   }
 }
 
-// PRIORITY 2: Resend API
+// My Resend API service
 async function sendViaResend(email, otp, name) {
   try {
     if (!process.env.RESEND_API_KEY) {
@@ -115,22 +115,22 @@ async function sendViaResend(email, otp, name) {
   }
 }
 
-// HYBRID EMAIL SERVICE - Main export function
+// My hybrid email system - tries methods in order
 export async function sendOTPEmail(email, otp, name) {
   try {
-    // Priority 1: Gmail SMTP
+    // Try Gmail first
     const gmailResult = await sendViaGmailSMTP(email, otp, name);
     if (gmailResult) {
       return { success: true, method: 'gmail' };
     }
 
-    // Priority 2: Resend API
+    // Try Resend if Gmail fails
     const resendResult = await sendViaResend(email, otp, name);
     if (resendResult) {
       return { success: true, method: 'resend' };
     }
 
-    // Priority 3: Return false to trigger frontend EmailJS fallback
+    // Frontend EmailJS fallback if both fail
     return { success: false, method: 'none' };
 
   } catch (error) {

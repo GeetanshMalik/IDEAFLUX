@@ -1,14 +1,14 @@
 import emailjs from '@emailjs/browser';
 
-// Generate OTP (frontend fallback)
+// My OTP generator (frontend fallback)
 export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// PRIORITY 3: EmailJS (Frontend fallback when backend methods fail)
+// My EmailJS fallback when backend fails
 export const sendOTPEmailFallback = async (email, otp, name) => {
   try {
-    // EmailJS accounts with rotation
+    // My EmailJS accounts with rotation
     const emailJSAccounts = [
       {
         service_id: process.env.REACT_APP_EMAILJS_SERVICE_ID_1,

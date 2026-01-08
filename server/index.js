@@ -130,14 +130,14 @@ connectDB().then(() => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 
-  // Socket.io configuration - WebSocket FIRST for real-time performance
+  // My Socket.io config - WebSocket first for real-time performance
   const io = new Server(server, {
     pingTimeout: 60000,
     pingInterval: 25000,
     cors: corsOptions,
     transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
     allowEIO3: true,
-    // WebSocket optimizations
+    // WebSocket optimizations for my app
     upgradeTimeout: 30000,
     maxHttpBufferSize: 1e6,
     allowUpgrades: true
@@ -146,11 +146,11 @@ connectDB().then(() => {
   // Make io globally available
   global.io = io;
 
-  // Socket.io event handlers with better debugging
+  // My socket event handlers with debugging
   io.on("connection", (socket) => {
     console.log(`✅ User connected: ${socket.id} (Transport: ${socket.conn.transport.name})`);
 
-    // Log transport upgrades
+    // Log my transport upgrades
     socket.conn.on('upgrade', () => {
       console.log(`🔄 Transport upgraded to: ${socket.conn.transport.name} for ${socket.id}`);
     });
@@ -160,7 +160,7 @@ connectDB().then(() => {
         socket.join(userData._id);
         socket.emit("connected");
         console.log(`👤 User ${userData._id} joined their room (Socket: ${socket.id}, Transport: ${socket.conn.transport.name})`);
-        // Store user info on socket for debugging
+        // Store user info for my debugging
         socket.userId = userData._id;
       }
     });
