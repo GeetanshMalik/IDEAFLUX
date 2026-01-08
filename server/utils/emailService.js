@@ -9,10 +9,16 @@ export function generateOTP() {
 // My Gmail SMTP service
 async function sendViaGmailSMTP(email, otp, name) {
   try {
+    console.log('🔍 Gmail SMTP check:');
+    console.log('- Gmail User exists:', !!process.env.GMAIL_USER);
+    console.log('- Gmail Pass exists:', !!process.env.GMAIL_PASS);
+    
     if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+      console.log('❌ Gmail credentials missing');
       return false;
     }
 
+    console.log('📧 Creating Gmail transporter...');
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -21,45 +27,86 @@ async function sendViaGmailSMTP(email, otp, name) {
       }
     });
 
+    console.log('📧 Verifying Gmail connection...');
+    await transporter.verify();
+    console.log('✅ Gmail connection verified');
+
     const mailOptions = {
       from: `"IdeaFlux Team" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: 'IdeaFlux - Email Verification Code',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
-          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <div style="background-color: #14b8a6; color: white; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;">IF</div>
-              <h1 style="color: #1e293b; margin: 20px 0 10px 0;">IdeaFlux</h1>
-            </div>
-            
-            <h2 style="color: #1e293b; text-align: center; margin-bottom: 20px;">Email Verification</h2>
-            
-            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">Hi ${name},</p>
-            
-            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-              Welcome to IdeaFlux! Please use the verification code below to complete your account setup:
-            </p>
-            
-            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
-              <div style="font-size: 32px; font-weight: bold; color: #14b8a6; letter-spacing: 4px;">${otp}</div>
-            </div>
-            
-            <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
-              This code will expire in 10 minutes. If you didn't request this verification, please ignore this email.
-            </p>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-              <p style="color: #94a3b8; font-size: 12px;">© 2025 IdeaFlux. All rights reserved.</p>
-            </div>
-          </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        @media only screen and (max-width: 600px) {
+        .container { width: 100% !important; padding: 10px !important; }
+        .header { padding: 20px 15px !important; }
+        .content { padding: 20px 15px !important; }
+        .otp-box { padding: 15px !important; margin: 20px 0 !important; }
+        .otp-code { font-size: 28px !important; letter-spacing: 3px !important; }
+        .features { padding: 15px !important; }
+        h1 { font-size: 24px !important; }
+        h2 { font-size: 20px !important; }
+        }
+        </style>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
+        <!-- Main Container -->
+        <div class="container" style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; box-sizing: border-box;">
+        <!-- Header -->
+        <div class="header" style="background: linear-gradient(135deg, #14b8a6, #3b82f6); padding: 30px 20px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: bold;">💡IdeaFlux</h1>
+        <p style="margin: 8px 0 0 0; font-size: 18px; opacity: 0.9;">Where Ideas Come to Life</p>
         </div>
+        <!-- Main Content -->
+        <div class="content" style="padding: 30px 20px; box-sizing: border-box;">
+        <!-- Welcome Message -->
+        <h2 style="color: #1e293b; margin: 0 0 15px 0; font-size: 22px; text-align: center;">Welcome ${name}! 🎉</h2>
+        <p style="color: #475569; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0; text-align: center;">We're excited to have you join IdeaFlux! You're one step away from connecting with amazing creators.</p>
+        <p style="color: #475569; font-size: 15px; line-height: 1.5; margin: 0 0 25px 0; text-align: center;">Please verify your email with the code below:</p>
+        <!-- OTP Code Box -->
+        <div class="otp-box" style="background: linear-gradient(135deg, #14b8a6, #06b6d4); padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0; box-sizing: border-box;">
+        <p style="color: white; margin: 0 0 8px 0; font-size: 12px; font-weight: bold; letter-spacing: 1px;">VERIFICATION CODE</p>
+        <div style="background: rgba(255,255,255,0.2); padding: 12px; border-radius: 6px; display: inline-block; min-width: 150px;">
+        <span class="otp-code" style="color: white; font-size: 32px; font-weight: bold; letter-spacing: 5px; font-family: 'Courier New', monospace;">${otp}</span>
+        </div>
+        </div>
+        <!-- Timer -->
+        <p style="color: #64748b; font-size: 13px; text-align: center; margin: 20px 0;">⏰ This code will expire in <strong>5 minutes</strong> for your security.</p>
+        <!-- Features Section -->
+        <div class="features" style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 25px 0; box-sizing: border-box;">
+        <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 16px; text-align: center;">🚀 What's waiting for you:</h3>
+        <div style="color: #475569; font-size: 14px; line-height: 1.6;">
+        <p style="margin: 8px 0; text-align: center;">✨ Share ideas & get feedback</p>
+        <p style="margin: 8px 0; text-align: center;">💬 Real-time chat with creators</p>
+        <p style="margin: 8px 0; text-align: center;">🤖 AI assistant to help you</p>
+        <p style="margin: 8px 0; text-align: center;">🔥 Discover trending content</p>
+        </div>
+        </div>
+        <!-- Footer Note -->
+        <p style="color: #64748b; font-size: 14px; text-align: center; margin: 20px 0 0 0; line-height: 1.4;">If you didn't create this account, you can safely ignore this email.</p>
+        </div>
+        <!-- Footer -->
+        <div style="background: #1e293b; padding: 20px; text-align: center; color: #94a3b8;">
+        <p style="margin: 0 0 5px 0; font-size: 13px;">Need Help? We're here for YOU!</p>
+        <p style="margin: 0; font-size: 11px; color: #64748b;">© 2025 IdeaFlux Team</p>
+        </div>
+        </div>
+        </body>
+        </html>
       `
     };
 
+    console.log('📧 Sending Gmail email...');
     await transporter.sendMail(mailOptions);
+    console.log('✅ Gmail email sent successfully');
     return true;
   } catch (error) {
+    console.error('❌ Gmail SMTP error:', error.message);
     return false;
   }
 }
@@ -78,34 +125,68 @@ async function sendViaResend(email, otp, name) {
       to: email,
       subject: 'IdeaFlux - Email Verification Code',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
-          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <div style="background-color: #14b8a6; color: white; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;">IF</div>
-              <h1 style="color: #1e293b; margin: 20px 0 10px 0;">IdeaFlux</h1>
-            </div>
-            
-            <h2 style="color: #1e293b; text-align: center; margin-bottom: 20px;">Email Verification</h2>
-            
-            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">Hi ${name},</p>
-            
-            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-              Welcome to IdeaFlux! Please use the verification code below to complete your account setup:
-            </p>
-            
-            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
-              <div style="font-size: 32px; font-weight: bold; color: #14b8a6; letter-spacing: 4px;">${otp}</div>
-            </div>
-            
-            <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
-              This code will expire in 10 minutes. If you didn't request this verification, please ignore this email.
-            </p>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-              <p style="color: #94a3b8; font-size: 12px;">© 2025 IdeaFlux. All rights reserved.</p>
-            </div>
-          </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        @media only screen and (max-width: 600px) {
+        .container { width: 100% !important; padding: 10px !important; }
+        .header { padding: 20px 15px !important; }
+        .content { padding: 20px 15px !important; }
+        .otp-box { padding: 15px !important; margin: 20px 0 !important; }
+        .otp-code { font-size: 28px !important; letter-spacing: 3px !important; }
+        .features { padding: 15px !important; }
+        h1 { font-size: 24px !important; }
+        h2 { font-size: 20px !important; }
+        }
+        </style>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
+        <!-- Main Container -->
+        <div class="container" style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; box-sizing: border-box;">
+        <!-- Header -->
+        <div class="header" style="background: linear-gradient(135deg, #14b8a6, #3b82f6); padding: 30px 20px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: bold;">💡IdeaFlux</h1>
+        <p style="margin: 8px 0 0 0; font-size: 18px; opacity: 0.9;">Where Ideas Come to Life</p>
         </div>
+        <!-- Main Content -->
+        <div class="content" style="padding: 30px 20px; box-sizing: border-box;">
+        <!-- Welcome Message -->
+        <h2 style="color: #1e293b; margin: 0 0 15px 0; font-size: 22px; text-align: center;">Welcome ${name}! 🎉</h2>
+        <p style="color: #475569; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0; text-align: center;">We're excited to have you join IdeaFlux! You're one step away from connecting with amazing creators.</p>
+        <p style="color: #475569; font-size: 15px; line-height: 1.5; margin: 0 0 25px 0; text-align: center;">Please verify your email with the code below:</p>
+        <!-- OTP Code Box -->
+        <div class="otp-box" style="background: linear-gradient(135deg, #14b8a6, #06b6d4); padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0; box-sizing: border-box;">
+        <p style="color: white; margin: 0 0 8px 0; font-size: 12px; font-weight: bold; letter-spacing: 1px;">VERIFICATION CODE</p>
+        <div style="background: rgba(255,255,255,0.2); padding: 12px; border-radius: 6px; display: inline-block; min-width: 150px;">
+        <span class="otp-code" style="color: white; font-size: 32px; font-weight: bold; letter-spacing: 5px; font-family: 'Courier New', monospace;">${otp}</span>
+        </div>
+        </div>
+        <!-- Timer -->
+        <p style="color: #64748b; font-size: 13px; text-align: center; margin: 20px 0;">⏰ This code will expire in <strong>5 minutes</strong> for your security.</p>
+        <!-- Features Section -->
+        <div class="features" style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 25px 0; box-sizing: border-box;">
+        <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 16px; text-align: center;">🚀 What's waiting for you:</h3>
+        <div style="color: #475569; font-size: 14px; line-height: 1.6;">
+        <p style="margin: 8px 0; text-align: center;">✨ Share ideas & get feedback</p>
+        <p style="margin: 8px 0; text-align: center;">💬 Real-time chat with creators</p>
+        <p style="margin: 8px 0; text-align: center;">🤖 AI assistant to help you</p>
+        <p style="margin: 8px 0; text-align: center;">🔥 Discover trending content</p>
+        </div>
+        </div>
+        <!-- Footer Note -->
+        <p style="color: #64748b; font-size: 14px; text-align: center; margin: 20px 0 0 0; line-height: 1.4;">If you didn't create this account, you can safely ignore this email.</p>
+        </div>
+        <!-- Footer -->
+        <div style="background: #1e293b; padding: 20px; text-align: center; color: #94a3b8;">
+        <p style="margin: 0 0 5px 0; font-size: 13px;">Need Help? We're here for YOU!</p>
+        <p style="margin: 0; font-size: 11px; color: #64748b;">© 2025 IdeaFlux Team</p>
+        </div>
+        </div>
+        </body>
+        </html>
       `
     });
 
@@ -118,22 +199,36 @@ async function sendViaResend(email, otp, name) {
 // My hybrid email system - tries methods in order
 export async function sendOTPEmail(email, otp, name) {
   try {
+    console.log('📧 Starting hybrid email service for:', email);
+    console.log('🔍 Environment check:');
+    console.log('- Gmail User:', !!process.env.GMAIL_USER);
+    console.log('- Gmail Pass:', !!process.env.GMAIL_PASS);
+    console.log('- Resend Key:', !!process.env.RESEND_API_KEY);
+
     // Try Gmail first
+    console.log('📧 Trying Gmail SMTP...');
     const gmailResult = await sendViaGmailSMTP(email, otp, name);
     if (gmailResult) {
+      console.log('✅ Gmail SMTP successful');
       return { success: true, method: 'gmail' };
     }
+    console.log('❌ Gmail SMTP failed');
 
     // Try Resend if Gmail fails
+    console.log('📧 Trying Resend API...');
     const resendResult = await sendViaResend(email, otp, name);
     if (resendResult) {
+      console.log('✅ Resend API successful');
       return { success: true, method: 'resend' };
     }
+    console.log('❌ Resend API failed');
 
     // Frontend EmailJS fallback if both fail
+    console.log('📧 Both backend methods failed, triggering frontend fallback');
     return { success: false, method: 'none' };
 
   } catch (error) {
+    console.error('❌ Email service error:', error);
     return { success: false, method: 'error' };
   }
 }
