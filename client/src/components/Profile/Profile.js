@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Container, Paper, Typography, Grid, Avatar, Button, Box, CircularProgress, TextField } from '@mui/material';
+import { Container, Paper, Typography, Grid, Avatar, Button, Box, CircularProgress, TextField, Modal, IconButton } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import FileBase from 'react-file-base64';
@@ -13,6 +13,8 @@ import MessageIcon from '@mui/icons-material/Message';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CakeIcon from '@mui/icons-material/Cake';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import CloseIcon from '@mui/icons-material/Close';
 
 import { getUser, followUser, unfollowUser, updateUserProfile } from '../../actions/user';
 import { getPosts } from '../../actions/posts';
@@ -31,6 +33,12 @@ const Profile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [usernameError, setUsernameError] = useState('');
+  const [userPosts, setUserPosts] = useState([]); // Add state for user posts
+  
+  // Image modal states
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
+  const [modalImageTitle, setModalImageTitle] = useState('');
 
   // Form State - Added username and backgroundImage fields
   const [formData, setFormData] = useState({ 
@@ -44,8 +52,52 @@ const Profile = () => {
 
   useEffect(() => {
     dispatch(getUser(userId)); // Changed from id to userId
-    dispatch(getPosts(1));
+    // Fetch user's posts specifically
+    if (userId) {
+      fetchUserPosts();
+    }
   }, [dispatch, userId]); // Changed from id to userId
+
+  // Fetch user posts directly from API
+  const fetchUserPosts = async () => {
+    try {
+      const { data } = await api.fetchPostsByUser(userId);
+      setUserPosts(data);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      setUserPosts([]);
+    }
+  };
+
+  // Handle image modal
+  const handleImageClick = (imageSrc, title) => {
+    setModalImageSrc(imageSrc);
+    setModalImageTitle(title);
+    setImageModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setImageModalOpen(false);
+    setModalImageSrc('');
+    setModalImageTitle('');
+  };
+
+  // Handle keyboard events for modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && imageModalOpen) {
+        handleCloseModal();
+      }
+    };
+
+    if (imageModalOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [imageModalOpen]);
 
   useEffect(() => {
     if (userProfile) {
@@ -162,7 +214,6 @@ const Profile = () => {
 
   if (isLoading || !userProfile) return <CircularProgress sx={{ display: 'block', m: 'auto', mt: 5, color: '#14b8a6' }} />;
 
-  const userPosts = posts.filter(p => p.creator === userId); // Changed from id to userId
   const isOwner = currentUserId === userProfile._id;
 
   return (
@@ -182,8 +233,42 @@ const Profile = () => {
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'flex-end',
-            p: 2
-          }}>
+            p: 2,
+            cursor: (isEditing ? formData.backgroundImage : userProfile.backgroundImage) ? 'pointer' : 'default',
+            '&:hover .bg-zoom-overlay': {
+              opacity: (isEditing ? formData.backgroundImage : userProfile.backgroundImage) ? 1 : 0
+            }
+          }}
+          onClick={() => {
+            const bgImage = isEditing ? formData.backgroundImage : userProfile.backgroundImage;
+            if (bgImage) {
+              handleImageClick(bgImage, `${userProfile.name}'s Background`);
+            }
+          }}
+          >
+            {/* Background Image Zoom Overlay */}
+            {(isEditing ? formData.backgroundImage : userProfile.backgroundImage) && (
+              <Box
+                className="bg-zoom-overlay"
+                sx={{
+                  position: 'absolute',
+                  top: 16,
+                  left: 16,
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  borderRadius: '50%',
+                  padding: '8px',
+                  opacity: 0,
+                  transition: 'opacity 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1
+                }}
+              >
+                <ZoomInIcon sx={{ color: 'white', fontSize: '1.5rem' }} />
+              </Box>
+            )}
+
             {isEditing && (
               <Box sx={{ 
                 position: 'absolute', 
@@ -191,7 +276,8 @@ const Profile = () => {
                 right: 16,
                 bgcolor: 'rgba(0,0,0,0.7)',
                 borderRadius: 2,
-                p: 1
+                p: 1,
+                zIndex: 2
               }}>
                 <Typography variant="caption" sx={{ color: 'white', display: 'block', mb: 1 }}>
                   Background Image
@@ -204,7 +290,10 @@ const Profile = () => {
                 {formData.backgroundImage && (
                   <Button 
                     size="small" 
-                    onClick={() => setFormData({ ...formData, backgroundImage: '' })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFormData({ ...formData, backgroundImage: '' });
+                    }}
                     sx={{ mt: 1, color: 'white', fontSize: '0.7rem' }}
                   >
                     Remove
@@ -219,19 +308,59 @@ const Profile = () => {
               {/* 2. AVATAR */}
               <Grid item xs={12} sm={3} sx={{ display: 'flex', justifyContent: 'center', mt: -8 }}>
                 <Box position="relative">
-                  <Avatar 
-                    src={isEditing ? formData.picture : userProfile.picture} 
-                    alt={userProfile.name} 
-                    sx={{ 
-                      width: { xs: 120, md: 160 }, 
-                      height: { xs: 120, md: 160 }, 
-                      fontSize: '4rem', 
-                      bgcolor: colors.primary, 
-                      border: `5px solid ${colors.darkSecondary}` 
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      cursor: (isEditing ? formData.picture : userProfile.picture) ? 'pointer' : 'default',
+                      '&:hover .avatar-zoom-overlay': {
+                        opacity: (isEditing ? formData.picture : userProfile.picture) ? 1 : 0
+                      }
+                    }}
+                    onClick={() => {
+                      const profilePic = isEditing ? formData.picture : userProfile.picture;
+                      if (profilePic) {
+                        handleImageClick(profilePic, `${userProfile.name}'s Profile Picture`);
+                      }
                     }}
                   >
-                    {userProfile.name.charAt(0)}
-                  </Avatar>
+                    <Avatar 
+                      src={isEditing ? formData.picture : userProfile.picture} 
+                      alt={userProfile.name} 
+                      sx={{ 
+                        width: { xs: 120, md: 160 }, 
+                        height: { xs: 120, md: 160 }, 
+                        fontSize: '4rem', 
+                        bgcolor: colors.primary, 
+                        border: `5px solid ${colors.darkSecondary}` 
+                      }}
+                    >
+                      {userProfile.name.charAt(0)}
+                    </Avatar>
+                    
+                    {/* Avatar Zoom Overlay */}
+                    {(isEditing ? formData.picture : userProfile.picture) && (
+                      <Box
+                        className="avatar-zoom-overlay"
+                        sx={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                          borderRadius: '50%',
+                          padding: '8px',
+                          opacity: 0,
+                          transition: 'opacity 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <ZoomInIcon sx={{ color: 'white', fontSize: '1.5rem' }} />
+                      </Box>
+                    )}
+                  </Box>
+                  
                   {isEditing && (
                     <Box sx={{ mt: 1, textAlign: 'center' }}>
                       <FileBase 
@@ -489,6 +618,77 @@ const Profile = () => {
           )}
         </Grid>
       </Container>
+
+      {/* Image Modal */}
+      <Modal
+        open={imageModalOpen}
+        onClose={handleCloseModal}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            outline: 'none'
+          }}
+        >
+          {/* Close Button */}
+          <IconButton
+            onClick={handleCloseModal}
+            sx={{
+              position: 'absolute',
+              top: -50,
+              right: -10,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              color: 'white',
+              zIndex: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.9)'
+              }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          
+          {/* Image Title */}
+          {modalImageTitle && (
+            <Typography
+              variant="h6"
+              sx={{
+                position: 'absolute',
+                top: -50,
+                left: 0,
+                color: 'white',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '0.9rem'
+              }}
+            >
+              {modalImageTitle}
+            </Typography>
+          )}
+          
+          {/* Full Size Image */}
+          <img
+            src={modalImageSrc}
+            alt={modalImageTitle || 'Full size image'}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '10px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'
+            }}
+          />
+        </Box>
+      </Modal>
     </Box>
   );
 };

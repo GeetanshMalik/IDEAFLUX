@@ -17,6 +17,7 @@ import NotificationsPage from './components/Notifications/NotificationsPage';
 import AIAssistant from './components/AIAssistant/AIAssistant';
 import Create from './components/Create/Create';
 import Profile from './components/Profile/Profile';
+import PostDetails from './components/PostDetails/PostDetails';
 import store from './store';
 
 const App = () => {
@@ -104,6 +105,7 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<Navigate to="/posts" />} />
                     <Route path="/posts" element={user ? <Home /> : <Navigate to="/auth" />} />
+                    <Route path="/posts/:id" element={user ? <PostDetails /> : <Navigate to="/auth" />} />
                     <Route path="/posts/search" element={user ? <SearchPage /> : <Navigate to="/auth" />} />
                     <Route path="/create" element={user ? <Create /> : <Navigate to="/auth" />} />
                     <Route path="/chat" element={user ? <Chat /> : <Navigate to="/auth" />} />

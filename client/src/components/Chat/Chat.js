@@ -7,8 +7,8 @@ import { LoadingSpinner } from "../../components/Loading/Loading";
 import { useLanguage } from '../../context/LanguageProvider';
 import "./chat.css";
 
-// Use local endpoint for development
-const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000"; 
+// Use Heroku backend URL
+const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "https://ideaflux-backend-b19efa363bd1.herokuapp.com"; 
 
 const Chat = () => {
   const { t } = useLanguage();
@@ -25,11 +25,11 @@ const Chat = () => {
     if (!user?.result?._id) return;
 
     const newSocket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'], // WebSocket first, polling backup
-      timeout: 10000,
+      transports: ['websocket'], // WebSocket only as requested
+      timeout: 15000,
       forceNew: false, // Reuse connections for efficiency
-      upgrade: true,
-      rememberUpgrade: true
+      upgrade: false, // Disable upgrade since we only want WebSocket
+      autoConnect: true
     });
 
     // My connection debugging

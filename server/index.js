@@ -91,6 +91,27 @@ app.get('/test-socket', (req, res) => {
   });
 });
 
+// Test posts endpoint
+app.get('/test-posts', async (req, res) => {
+  try {
+    // Import Post model dynamically to avoid circular imports
+    const { default: Post } = await import('./model/post.js');
+    const posts = await Post.find().limit(5).sort({ createdAt: -1 });
+    res.status(200).json({ 
+      message: 'Posts test endpoint',
+      totalPosts: posts.length,
+      recentPosts: posts.map(p => ({ id: p._id, title: p.title, creator: p.creator })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Posts test failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.use('/posts', postRoutes);
 app.use('/user', userRoutes);
 app.use('/message', chatRoutes);
@@ -140,17 +161,17 @@ connectDB().then(() => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 
-  // My Socket.io config - WebSocket first for real-time performance
+  // My Socket.io config - WebSocket ONLY as requested
   const io = new Server(server, {
     pingTimeout: 60000,
     pingInterval: 25000,
     cors: corsOptions,
-    transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
+    transports: ['websocket'], // WebSocket ONLY - no polling
     allowEIO3: true,
     // WebSocket optimizations for my app
     upgradeTimeout: 30000,
     maxHttpBufferSize: 1e6,
-    allowUpgrades: true
+    allowUpgrades: false // Disable upgrades since we only use WebSocket
   });
 
   // Make io globally available

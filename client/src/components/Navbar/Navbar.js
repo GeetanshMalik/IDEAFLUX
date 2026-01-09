@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Avatar, Box, IconButton, Tooltip, Typography, Badge, Menu, MenuItem, Snackbar, Alert } from '@mui/material';
+import { AppBar, Toolbar, Avatar, Box, IconButton, Tooltip, Typography, Badge, Menu, MenuItem, Snackbar, Alert, Modal } from '@mui/material';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import io from 'socket.io-client';
@@ -16,9 +16,11 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import PersonIcon from '@mui/icons-material/Person';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import CloseIcon from '@mui/icons-material/Close';
 
 // My Heroku backend URL
-const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
+const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "https://ideaflux-backend-b19efa363bd1.herokuapp.com";
 
 const Navbar = () => {
   const [user, setUser] = useState(null);
@@ -31,6 +33,10 @@ const Navbar = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
+
+  // Image modal states
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
 
   const isActive = (path) => location.pathname === path;
 
@@ -100,9 +106,60 @@ const Navbar = () => {
     checkAuth();
   }, [location]);
 
-  // Real-Time Logic
+  // Real-Time Logic - Optimized to prevent multiple connections
   useEffect(() => {
-    if (!user) return;
+    if (!user?.result?._id) return;
+
+    let socket = null;
+    let isConnecting = false;
+
+    const connectSocket = () => {
+      if (isConnecting || socket?.connected) return;
+      
+      isConnecting = true;
+      
+      socket = io(ENDPOINT, {
+        transports: ['websocket'], // WebSocket only as requested
+        timeout: 15000,
+        forceNew: false,
+        upgrade: false, // Disable upgrade since we only want WebSocket
+        autoConnect: true
+      });
+      
+      socket.on('connect', () => {
+        console.log('🔌 Navbar socket connected:', socket.id, 'Transport:', socket.io.engine.transport.name);
+        isConnecting = false;
+        socket.emit("setup", { _id: user.result._id });
+      });
+      
+      socket.on('connect_error', (error) => {
+        console.error('❌ Navbar socket connection error:', error);
+        isConnecting = false;
+      });
+      
+      socket.on('disconnect', (reason) => {
+        console.log('🔌 Navbar socket disconnected:', reason);
+        isConnecting = false;
+      });
+      
+      socket.on('connected', () => {
+        console.log('✅ Navbar socket setup confirmed for user:', user.result._id);
+      });
+
+      const handleNavbarNotification = (newNotif) => {
+        // Filter out my system test notifications
+        if (newNotif.type === 'system' && newNotif.message?.includes('connection established')) {
+          return;
+        }
+        
+        console.log('🔔 Notification received in Navbar:', newNotif);
+        setNotificationCount((prev) => prev + 1);
+        setSnackbarMsg(`New notification from ${newNotif.sender?.name || 'Someone'}`);
+        setOpenSnackbar(true);
+      };
+
+      socket.on("notification received", handleNavbarNotification);
+    };
 
     const fetchUnreadCount = async () => {
         try {
@@ -113,6 +170,7 @@ const Navbar = () => {
             console.log(error);
         }
     };
+    
     fetchUnreadCount();
 
     // Listen for notification updates from NotificationsPage
@@ -121,63 +179,56 @@ const Navbar = () => {
     };
     window.addEventListener('notifications-updated', handleNotificationUpdate);
 
-    const socket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'], // WebSocket first, polling backup
-      timeout: 10000,
-      forceNew: false, // Reuse connections for efficiency
-      upgrade: true,
-      rememberUpgrade: true
-    });
-    
-    // My connection debugging
-    socket.on('connect', () => {
-      console.log('🔌 Navbar socket connected:', socket.id, 'Transport:', socket.io.engine.transport.name);
-    });
-    
-    socket.on('connect_error', (error) => {
-      console.error('❌ Navbar socket connection error:', error);
-    });
-    
-    socket.on('disconnect', (reason) => {
-      console.log('🔌 Navbar socket disconnected:', reason);
-    });
-    
-    // Log my transport upgrades
-    socket.io.engine.on('upgrade', () => {
-      console.log('🔄 Navbar transport upgraded to:', socket.io.engine.transport.name);
-    });
-    
-    socket.emit("setup", { _id: user.result._id });
-    
-    socket.on('connected', () => {
-      console.log('✅ Navbar socket setup confirmed for user:', user.result._id);
-    });
-
-    const handleNavbarNotification = (newNotif) => {
-      // Filter out my system test notifications
-      if (newNotif.type === 'system' && newNotif.message?.includes('connection established')) {
-        return;
-      }
-      
-      console.log('🔔 Notification received in Navbar:', newNotif);
-      setNotificationCount((prev) => prev + 1);
-      setSnackbarMsg(`New notification from ${newNotif.sender?.name || 'Someone'}`);
-      setOpenSnackbar(true);
-    };
-
-    socket.on("notification received", handleNavbarNotification);
+    // Connect socket with delay to prevent rapid connections
+    const connectTimer = setTimeout(connectSocket, 1000);
 
     // My cleanup to prevent duplicate listeners
     return () => {
-      socket.off("notification received", handleNavbarNotification);
+      clearTimeout(connectTimer);
       window.removeEventListener('notifications-updated', handleNotificationUpdate);
-      socket.disconnect();
+      if (socket) {
+        socket.off("notification received");
+        socket.disconnect();
+        socket = null;
+      }
+      isConnecting = false;
     };
-  }, [user]);
+  }, [user?.result?._id]); // Only reconnect when user ID changes
 
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
   const handleSnackbarClose = () => setOpenSnackbar(false);
+
+  // Handle profile picture click
+  const handleProfilePicClick = (e) => {
+    e.stopPropagation();
+    if (user?.result?.picture) {
+      setModalImageSrc(user.result.picture);
+      setImageModalOpen(true);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setImageModalOpen(false);
+    setModalImageSrc('');
+  };
+
+  // Handle keyboard events for modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && imageModalOpen) {
+        handleCloseModal();
+      }
+    };
+
+    if (imageModalOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [imageModalOpen]);
 
   // Styles
   const iconStyle = (path) => ({
@@ -254,19 +305,53 @@ const Navbar = () => {
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', minWidth: { xs: '60px', sm: '100px', md: '150px' } }}>
              {user ? (
                  <>
-                    <Avatar 
-                       src={user.result.picture} 
-                       alt={user.result.name}
-                       onClick={handleMenu}
-                       sx={{ 
-                           cursor: 'pointer', 
-                           bgcolor: '#14b8a6', 
-                           width: 40, height: 40,
-                           border: isActive(`/profile/${user.result._id}`) ? '2px solid white' : 'none'
-                       }}
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        '&:hover .profile-zoom-overlay': {
+                          opacity: user?.result?.picture ? 1 : 0
+                        }
+                      }}
                     >
-                        {user.result.name.charAt(0)}
-                    </Avatar>
+                      <Avatar 
+                         src={user.result.picture} 
+                         alt={user.result.name}
+                         onClick={handleMenu}
+                         sx={{ 
+                             cursor: 'pointer', 
+                             bgcolor: '#14b8a6', 
+                             width: 40, height: 40,
+                             border: isActive(`/profile/${user.result._id}`) ? '2px solid white' : 'none'
+                         }}
+                      >
+                          {user.result.name.charAt(0)}
+                      </Avatar>
+                      
+                      {/* Profile Picture Zoom Overlay */}
+                      {user?.result?.picture && (
+                        <Box
+                          className="profile-zoom-overlay"
+                          sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            borderRadius: '50%',
+                            padding: '4px',
+                            opacity: 0,
+                            transition: 'opacity 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 1,
+                            pointerEvents: 'none'
+                          }}
+                        >
+                          <ZoomInIcon sx={{ color: 'white', fontSize: '1rem' }} />
+                        </Box>
+                      )}
+                    </Box>
                     
                     <Menu
                         anchorEl={anchorEl}
@@ -283,6 +368,14 @@ const Navbar = () => {
                         }}>
                             <PersonIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> Profile
                         </MenuItem>
+                        {user?.result?.picture && (
+                          <MenuItem onClick={() => {
+                            handleProfilePicClick({ stopPropagation: () => {} });
+                            handleClose();
+                          }}>
+                            <ZoomInIcon sx={{ mr: 1, fontSize: 20, color: '#94a3b8' }} /> View Profile Picture
+                          </MenuItem>
+                        )}
                         <MenuItem onClick={logout} sx={{ color: '#ef4444' }}>
                             <PowerSettingsNewIcon sx={{ mr: 1, fontSize: 20 }} /> Logout
                         </MenuItem>
@@ -303,6 +396,75 @@ const Navbar = () => {
           {snackbarMsg}
         </Alert>
       </Snackbar>
+
+      {/* Profile Picture Modal */}
+      <Modal
+        open={imageModalOpen}
+        onClose={handleCloseModal}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            outline: 'none'
+          }}
+        >
+          {/* Close Button */}
+          <IconButton
+            onClick={handleCloseModal}
+            sx={{
+              position: 'absolute',
+              top: -50,
+              right: -10,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              color: 'white',
+              zIndex: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.9)'
+              }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          
+          {/* Image Title */}
+          <Typography
+            variant="h6"
+            sx={{
+              position: 'absolute',
+              top: -50,
+              left: 0,
+              color: 'white',
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '0.9rem'
+            }}
+          >
+            {user?.result?.name}'s Profile Picture
+          </Typography>
+          
+          {/* Full Size Image */}
+          <img
+            src={modalImageSrc}
+            alt={`${user?.result?.name}'s Profile Picture`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '10px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'
+            }}
+          />
+        </Box>
+      </Modal>
 
     </AppBar>
   );

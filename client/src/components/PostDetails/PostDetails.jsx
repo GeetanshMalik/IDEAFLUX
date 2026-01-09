@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { Paper, Typography, CircularProgress, Divider, Box } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Paper, Typography, CircularProgress, Divider, Box, Modal, IconButton } from '@mui/material';
+import { Close as CloseIcon, ZoomIn as ZoomInIcon } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -12,6 +13,10 @@ const PostDetails = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  // State for image modal
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -24,6 +29,34 @@ const PostDetails = () => {
       dispatch(getPostsBySearch({ search: 'none', tags: post.tags.join(',') }));
     }
   }, [post, dispatch]);
+
+  // Handle keyboard events for modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && imageModalOpen) {
+        handleCloseModal();
+      }
+    };
+
+    if (imageModalOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [imageModalOpen]);
+
+  // Handle image click
+  const handleImageClick = (imageSrc) => {
+    setModalImageSrc(imageSrc);
+    setImageModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setImageModalOpen(false);
+    setModalImageSrc('');
+  };
 
   // Show loading while fetching
   if (isLoading) {
@@ -112,13 +145,124 @@ const PostDetails = () => {
 
         {/* IMAGE SECTION */}
         <div style={{ marginLeft: '20px', flex: 1 }}>
-          <img 
-            style={{ borderRadius: '20px', objectFit: 'cover', width: '100%', maxHeight: '500px' }} 
-            src={post.selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png'} 
-            alt={post.title} 
-          />
+          <Box 
+            sx={{ 
+              position: 'relative',
+              cursor: 'pointer',
+              '&:hover .zoom-icon': {
+                opacity: 1
+              },
+              '&:hover .image-hint': {
+                opacity: 1
+              }
+            }}
+            onClick={() => handleImageClick(post.selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png')}
+          >
+            <img 
+              style={{ 
+                borderRadius: '20px', 
+                objectFit: 'cover', 
+                width: '100%', 
+                maxHeight: '500px',
+                transition: 'transform 0.3s ease'
+              }} 
+              src={post.selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png'} 
+              alt={post.title} 
+            />
+            {/* Zoom Icon Overlay */}
+            <Box
+              className="zoom-icon"
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                borderRadius: '50%',
+                padding: '12px',
+                opacity: 0,
+                transition: 'opacity 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <ZoomInIcon sx={{ color: 'white', fontSize: '2rem' }} />
+            </Box>
+            {/* Hint Text */}
+            <Box
+              className="image-hint"
+              sx={{
+                position: 'absolute',
+                bottom: '10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                opacity: 0,
+                transition: 'opacity 0.3s ease'
+              }}
+            >
+              Click to view full size
+            </Box>
+          </Box>
         </div>
       </div>
+
+      {/* Image Modal */}
+      <Modal
+        open={imageModalOpen}
+        onClose={handleCloseModal}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            outline: 'none'
+          }}
+        >
+          {/* Close Button */}
+          <IconButton
+            onClick={handleCloseModal}
+            sx={{
+              position: 'absolute',
+              top: -50,
+              right: -10,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              color: 'white',
+              zIndex: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.9)'
+              }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          
+          {/* Full Size Image */}
+          <img
+            src={modalImageSrc}
+            alt={post?.title || 'Full size image'}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '10px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'
+            }}
+          />
+        </Box>
+      </Modal>
 
       {/* RECOMMENDED POSTS */}
       {recommendedPosts.length > 0 && (
@@ -130,17 +274,54 @@ const PostDetails = () => {
             {recommendedPosts.map(({ title, name, message, likes, selectedFile, _id }) => (
               <div 
                 style={{ margin: '10px', cursor: 'pointer', minWidth: '200px', maxWidth: '200px' }} 
-                onClick={() => openPost(_id)} 
                 key={_id}
               >
-                <img 
-                  src={selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png'} 
-                  width="200px" 
-                  height="150px" 
-                  style={{ borderRadius: '10px', objectFit: 'cover' }} 
-                  alt="post" 
-                />
-                <Typography gutterBottom variant="h6" sx={{ mt: 1, fontSize: '1rem', fontWeight: 'bold' }}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    '&:hover .zoom-overlay': {
+                      opacity: 1
+                    }
+                  }}
+                >
+                  <img 
+                    src={selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png'} 
+                    width="200px" 
+                    height="150px" 
+                    style={{ borderRadius: '10px', objectFit: 'cover', cursor: 'pointer' }} 
+                    alt="post" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick(selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png');
+                    }}
+                  />
+                  {/* Zoom overlay for recommended images */}
+                  <Box
+                    className="zoom-overlay"
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ZoomInIcon sx={{ color: 'white', fontSize: '1.5rem' }} />
+                  </Box>
+                </Box>
+                <Typography 
+                  gutterBottom 
+                  variant="h6" 
+                  sx={{ mt: 1, fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                  onClick={() => openPost(_id)}
+                >
                   {title || 'Untitled'}
                 </Typography>
                 <Typography gutterBottom variant="subtitle2" sx={{ color: '#94a3b8' }}>

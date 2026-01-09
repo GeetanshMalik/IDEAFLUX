@@ -51,6 +51,31 @@ const AIAssistant = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Format AI response to remove excessive asterisks and format like ChatGPT
+  const formatAIResponse = (text) => {
+    if (!text) return text;
+    
+    // Remove excessive asterisks (more than 2 consecutive)
+    let formatted = text.replace(/\*{3,}/g, '**');
+    
+    // Convert **text** to bold formatting but remove asterisks for display
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '$1');
+    
+    // Remove single asterisks used for emphasis
+    formatted = formatted.replace(/\*([^*]+)\*/g, '$1');
+    
+    // Clean up any remaining multiple asterisks
+    formatted = formatted.replace(/\*+/g, '');
+    
+    // Format numbered lists properly
+    formatted = formatted.replace(/^\d+\.\s/gm, (match) => `${match}`);
+    
+    // Format bullet points
+    formatted = formatted.replace(/^[-•]\s/gm, '• ');
+    
+    return formatted;
+  };
+
   const quickPrompts = [
     {
       icon: <WriteIcon />,
@@ -297,7 +322,7 @@ const AIAssistant = () => {
                         whiteSpace: 'pre-wrap',
                         lineHeight: 1.6
                       }}>
-                        {message.content}
+                        {message.type === 'ai' ? formatAIResponse(message.content) : message.content}
                       </Typography>
                       
                       {message.type === 'ai' && (

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create API instance with base configuration
 const API = axios.create({ 
-  baseURL: process.env.REACT_APP_API_URL || 'https://ideaflux-backend.vercel.app',
+  baseURL: process.env.REACT_APP_API_URL || 'https://ideaflux-backend-b19efa363bd1.herokuapp.com',
   timeout: 10000, // 10 second timeout
   headers: {
     'Content-Type': 'application/json',

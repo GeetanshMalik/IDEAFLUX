@@ -7,8 +7,8 @@ import Notifications from "./Notifications";
 import io from 'socket.io-client';
 import { useLanguage } from '../../context/LanguageProvider';
 
-// Use environment variable or fallback to localhost
-const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
+// Use Heroku backend URL
+const ENDPOINT = process.env.REACT_APP_SOCKET_URL || "https://ideaflux-backend-b19efa363bd1.herokuapp.com";
 
 const NotificationsPage = () => {
   const { t } = useLanguage();
@@ -36,10 +36,9 @@ const NotificationsPage = () => {
     if (!user?.result?._id) return;
 
     const socket = io(ENDPOINT, {
-      transports: ['websocket', 'polling'], // WebSocket FIRST, polling as backup
-      timeout: 10000,
-      upgrade: true,
-      rememberUpgrade: true,
+      transports: ['websocket'], // WebSocket only as requested
+      timeout: 15000,
+      upgrade: false, // Disable upgrade since we only want WebSocket
       forceNew: false // Don't force new connection - reuse existing
     });
 
