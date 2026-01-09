@@ -36,6 +36,8 @@ app.use('/user', limiter); // Apply rate limiting to auth routes
 const corsOptions = {
   origin: [
     'http://localhost:3000',
+    'https://ideaflux.me',
+    'https://www.ideaflux.me',
     'https://ideaflux-nine.vercel.app',
     'https://www.ideaflux-nine.vercel.app',
     'https://ideaflux-frontend.vercel.app', // Add correct frontend URL
