@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Create API instance with base configuration
-const API = axios.create({ 
+const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'https://ideaflux-backend-b19efa363bd1.herokuapp.com',
   timeout: 10000, // 10 second timeout
   headers: {
@@ -36,7 +36,7 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     const { response } = error;
-    
+
     // Handle different error scenarios
     if (response?.status === 401) {
       // Token expired or invalid
@@ -44,27 +44,27 @@ API.interceptors.response.use(
       window.location.href = '/auth';
       return Promise.reject(new Error('Session expired. Please log in again.'));
     }
-    
+
     if (response?.status === 403) {
       return Promise.reject(new Error('Access denied. You don\'t have permission.'));
     }
-    
+
     if (response?.status === 404) {
       return Promise.reject(new Error('Resource not found.'));
     }
-    
+
     if (response?.status >= 500) {
-      return Promise.reject(new Error('Server error. Please try again later.'));
+      return Promise.reject(error);
     }
-    
+
     if (error.code === 'ECONNABORTED') {
       return Promise.reject(new Error('Request timeout. Please check your connection.'));
     }
-    
+
     if (!response) {
       return Promise.reject(new Error('Network error. Please check your connection.'));
     }
-    
+
     // Return the original error message from server if available
     const message = response.data?.message || error.message || 'An unexpected error occurred.';
     return Promise.reject(new Error(message));
@@ -100,6 +100,8 @@ export const searchUsers = (query) => API.get(`/user/search?searchQuery=${query}
 export const followUser = (id) => API.patch(`/user/${id}/follow`);
 export const unfollowUser = (id) => API.patch(`/user/${id}/unfollow`);
 export const deleteAccount = (id) => API.delete(`/user/${id}`);
+export const getUserSettings = () => API.get('/user/settings');
+export const updateUserSettings = (data) => API.patch('/user/settings', data);
 
 // --- CHAT ---
 export const fetchChats = () => API.get('/message/chat');

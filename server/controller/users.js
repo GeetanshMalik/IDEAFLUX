@@ -21,7 +21,7 @@ const validatePassword = (password) => {
 
 export const signin = async (req, res) => {
   const { email, password } = req.body;
-  
+
   try {
     // Input validation
     if (!email || !password) {
@@ -48,18 +48,18 @@ export const signin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { email: existingUser.email, id: existingUser._id }, 
-      process.env.JWT_SECRET || "fallback_secret_key", 
+      { email: existingUser.email, id: existingUser._id },
+      process.env.JWT_SECRET || "fallback_secret_key",
       { expiresIn: "24h" }
     );
 
     // Don't send password in response
     const { password: _, ...userWithoutPassword } = existingUser.toObject();
-    
-    res.status(200).json({ 
-      result: userWithoutPassword, 
+
+    res.status(200).json({
+      result: userWithoutPassword,
       token,
-      message: "Sign in successful!" 
+      message: "Sign in successful!"
     });
   } catch (error) {
     console.error("Signin error:", error);
@@ -70,7 +70,7 @@ export const signin = async (req, res) => {
 // Step 1: Initial signup - generate OTP and try backend email services
 export const signup = async (req, res) => {
   const { email, password, confirmPassword, firstName, lastName } = req.body;
-  
+
   try {
     // Input validation
     if (!email || !password || !confirmPassword || !firstName || !lastName) {
@@ -97,14 +97,14 @@ export const signup = async (req, res) => {
     // Generate OTP and try backend email services
     const otp = generateOTP();
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    
-    // Try backend email services (Gmail SMTP -> Resend)
-    const emailResult = await sendOTPEmail(email, otp, fullName);
-    
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
-    
-    // Store verification data
+
+    // Clean up any existing verification records for this email
+    await EmailVerification.deleteMany({ email: email.toLowerCase() });
+
+    // Store verification data first (so OTP exists before email arrives)
     const verificationRecord = await EmailVerification.create({
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -113,22 +113,25 @@ export const signup = async (req, res) => {
       attempts: 0
     });
 
+    // Try backend email services (Gmail SMTP -> Resend)
+    const emailResult = await sendOTPEmail(email, otp, fullName);
+
     if (emailResult.success) {
       // Backend email service worked
-      res.status(200).json({ 
+      res.status(200).json({
         requiresVerification: true,
         email: email.toLowerCase(),
         emailMethod: emailResult.method,
-        message: "Please check your email for the verification code." 
+        message: "Please check your email for the verification code."
       });
     } else {
       // Backend failed, return OTP for frontend EmailJS fallback
-      res.status(200).json({ 
+      res.status(200).json({
         requiresVerification: true,
         email: email.toLowerCase(),
         otp: otp, // Frontend will use this for EmailJS
         emailMethod: 'frontend_fallback',
-        message: "Please check your email for the verification code." 
+        message: "Please check your email for the verification code."
       });
     }
 
@@ -141,13 +144,13 @@ export const signup = async (req, res) => {
 // Step 2: Verify OTP and complete signup
 export const verifyEmail = async (req, res) => {
   const { email, otp } = req.body;
-  
+
   try {
     if (!email || !otp) {
       return res.status(400).json({ message: "Email and OTP are required." });
     }
 
-    const verification = await EmailVerification.findOne({ 
+    const verification = await EmailVerification.findOne({
       email: email.toLowerCase(),
       otp: otp.toString()
     });
@@ -163,9 +166,9 @@ export const verifyEmail = async (req, res) => {
     }
 
     // Create user account
-    const result = await User.create({ 
-      email: verification.email, 
-      password: verification.password, 
+    const result = await User.create({
+      email: verification.email,
+      password: verification.password,
       name: verification.name,
       bio: "",
       dob: "",
@@ -179,18 +182,18 @@ export const verifyEmail = async (req, res) => {
     await EmailVerification.deleteOne({ _id: verification._id });
 
     const token = jwt.sign(
-      { email: result.email, id: result._id }, 
-      process.env.JWT_SECRET || "fallback_secret_key", 
+      { email: result.email, id: result._id },
+      process.env.JWT_SECRET || "fallback_secret_key",
       { expiresIn: "24h" }
     );
 
     // Don't send password in response
     const { password: _, ...userWithoutPassword } = result.toObject();
 
-    res.status(201).json({ 
-      result: userWithoutPassword, 
+    res.status(201).json({
+      result: userWithoutPassword,
       token,
-      message: "Account created and verified successfully!" 
+      message: "Account created and verified successfully!"
     });
   } catch (error) {
     console.error("Email verification error:", error);
@@ -201,24 +204,24 @@ export const verifyEmail = async (req, res) => {
 // Resend OTP - try backend services first, fallback to frontend
 export const resendOTP = async (req, res) => {
   const { email } = req.body;
-  
+
   try {
     if (!email) {
       return res.status(400).json({ message: "Email is required." });
     }
 
     const verification = await EmailVerification.findOne({ email: email.toLowerCase() });
-    
+
     if (!verification) {
       return res.status(400).json({ message: "No pending verification found. Please signup again." });
     }
 
     // Generate new OTP
     const newOTP = generateOTP();
-    
+
     // Try backend email services
     const emailResult = await sendOTPEmail(email, newOTP, verification.name);
-    
+
     // Update verification record
     verification.otp = newOTP.toString();
     verification.attempts = 0;
@@ -227,13 +230,13 @@ export const resendOTP = async (req, res) => {
 
     if (emailResult.success) {
       // Backend email service worked
-      res.status(200).json({ 
+      res.status(200).json({
         message: "New verification code has been sent to your email.",
         emailMethod: emailResult.method
       });
     } else {
       // Backend failed, return OTP for frontend EmailJS fallback
-      res.status(200).json({ 
+      res.status(200).json({
         message: "New verification code has been sent to your email.",
         otp: newOTP, // Frontend will use this for EmailJS
         emailMethod: 'frontend_fallback'
@@ -247,311 +250,378 @@ export const resendOTP = async (req, res) => {
 };
 
 export const googleSignin = async (req, res) => {
-    const { email, name, picture, googleId } = req.body;
-    
-    try {
-        if (!email || !name || !googleId) {
-            return res.status(400).json({ message: "Missing required Google authentication data." });
-        }
+  const { email, name, picture, googleId } = req.body;
 
-        let user = await User.findOne({ email: email.toLowerCase() });
-        
-        if (!user) {
-            // Create new user for Google signin
-            user = await User.create({
-                email: email.toLowerCase(),
-                name: name.trim(),
-                picture,
-                googleId,
-                password: "GOOGLE_AUTH_NO_PASSWORD",
-                bio: "",
-                dob: "",
-                followers: [],
-                following: [],
-                notifications: []
-            });
-        } else {
-            // Update existing user's Google info if needed
-            if (!user.googleId) {
-                user.googleId = googleId;
-                user.picture = picture || user.picture;
-                await user.save();
-            }
-        }
-
-        const token = jwt.sign(
-            { email: user.email, id: user._id }, 
-            process.env.JWT_SECRET || "fallback_secret_key", 
-            { expiresIn: "24h" }
-        );
-
-        // Don't send password in response
-        const { password: _, ...userWithoutPassword } = user.toObject();
-        
-        res.status(200).json({ 
-            result: userWithoutPassword, 
-            token,
-            message: "Google signin successful!" 
-        });
-    } catch (error) {
-        console.error("Google signin error:", error);
-        res.status(500).json({ message: "Google signin failed. Please try again." });
+  try {
+    if (!email || !name || !googleId) {
+      return res.status(400).json({ message: "Missing required Google authentication data." });
     }
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      // Create new user for Google signin
+      user = await User.create({
+        email: email.toLowerCase(),
+        name: name.trim(),
+        picture,
+        googleId,
+        password: "GOOGLE_AUTH_NO_PASSWORD",
+        bio: "",
+        dob: "",
+        followers: [],
+        following: [],
+        notifications: []
+      });
+    } else {
+      // Update existing user's Google info if needed
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.picture = picture || user.picture;
+        await user.save();
+      }
+    }
+
+    const token = jwt.sign(
+      { email: user.email, id: user._id },
+      process.env.JWT_SECRET || "fallback_secret_key",
+      { expiresIn: "24h" }
+    );
+
+    // Don't send password in response
+    const { password: _, ...userWithoutPassword } = user.toObject();
+
+    res.status(200).json({
+      result: userWithoutPassword,
+      token,
+      message: "Google signin successful!"
+    });
+  } catch (error) {
+    console.error("Google signin error:", error);
+    res.status(500).json({ message: "Google signin failed. Please try again." });
+  }
 };
 
 // --- USER DATA & ACTIONS ---
 
 export const getUser = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const user = await User.findById(id)
-            .populate('followers', 'name picture')
-            .populate('following', 'name picture');
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.status(200).json(user);
-    } catch (error) {
-        res.status(404).json({ message: error.message });
-    }
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id)
+      .populate('followers', 'name picture')
+      .populate('following', 'name picture');
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 export const getUserProfile = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const user = await User.findById(id)
-            .populate('followers', 'name picture username')
-            .populate('following', 'name picture username')
-            .select('-password'); // Exclude password from response
-        
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.status(200).json(user);
-    } catch (error) {
-        res.status(404).json({ message: error.message });
-    }
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id)
+      .populate('followers', 'name picture username')
+      .populate('following', 'name picture username')
+      .select('-password'); // Exclude password from response
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 export const updateUserProfile = async (req, res) => {
-    const { id } = req.params;
-    const { name, username, bio, dateOfBirth, picture, backgroundImage } = req.body;
+  const { id } = req.params;
+  const { name, username, bio, dateOfBirth, picture, backgroundImage } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(404).json({ message: `No user with id: ${id}` });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ message: `No user with id: ${id}` });
+  }
+
+  // Check if user is updating their own profile
+  if (req.userId !== id) {
+    return res.status(403).json({ message: "You can only update your own profile" });
+  }
+
+  try {
+    // If username is being updated, check if it's available
+    if (username) {
+      const existingUser = await User.findOne({
+        username: username.toLowerCase(),
+        _id: { $ne: id } // Exclude current user
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ message: "Username is already taken" });
+      }
     }
 
-    // Check if user is updating their own profile
-    if (req.userId !== id) {
-        return res.status(403).json({ message: "You can only update your own profile" });
+    const updateData = {
+      name,
+      bio,
+      dateOfBirth
+    };
+
+    // Only add username if it's provided
+    if (username) {
+      updateData.username = username.toLowerCase();
     }
 
-    try {
-        // If username is being updated, check if it's available
-        if (username) {
-            const existingUser = await User.findOne({ 
-                username: username.toLowerCase(),
-                _id: { $ne: id } // Exclude current user
-            });
-            
-            if (existingUser) {
-                return res.status(400).json({ message: "Username is already taken" });
-            }
-        }
-
-        const updateData = {
-            name,
-            bio,
-            dateOfBirth
-        };
-
-        // Only add username if it's provided
-        if (username) {
-            updateData.username = username.toLowerCase();
-        }
-
-        // Add picture if provided
-        if (picture !== undefined) {
-            updateData.picture = picture;
-        }
-
-        // Add background image if provided
-        if (backgroundImage !== undefined) {
-            updateData.backgroundImage = backgroundImage;
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(
-            id, 
-            updateData, 
-            { new: true }
-        ).select('-password');
-
-        res.status(200).json(updatedUser);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    // Add picture if provided
+    if (picture !== undefined) {
+      updateData.picture = picture;
     }
+
+    // Add background image if provided
+    if (backgroundImage !== undefined) {
+      updateData.backgroundImage = backgroundImage;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    ).select('-password');
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const checkUsernameAvailability = async (req, res) => {
-    const { username } = req.params;
-    
-    try {
-        if (!username || username.length < 3) {
-            return res.status(400).json({ 
-                available: false, 
-                message: "Username must be at least 3 characters long" 
-            });
-        }
+  const { username } = req.params;
 
-        // Check if username contains only allowed characters
-        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-            return res.status(400).json({ 
-                available: false, 
-                message: "Username can only contain letters, numbers, and underscores" 
-            });
-        }
-
-        const existingUser = await User.findOne({ username: username.toLowerCase() });
-        
-        res.status(200).json({ 
-            available: !existingUser,
-            message: existingUser ? "Username is already taken" : "Username is available"
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+  try {
+    if (!username || username.length < 3) {
+      return res.status(400).json({
+        available: false,
+        message: "Username must be at least 3 characters long"
+      });
     }
+
+    // Check if username contains only allowed characters
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({
+        available: false,
+        message: "Username can only contain letters, numbers, and underscores"
+      });
+    }
+
+    const existingUser = await User.findOne({ username: username.toLowerCase() });
+
+    res.status(200).json({
+      available: !existingUser,
+      message: existingUser ? "Username is already taken" : "Username is available"
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const searchUsers = async (req, res) => {
-    const { searchQuery } = req.query;
-    try {
-        const searchRegex = new RegExp(searchQuery, "i");
-        
-        // Search by name or username
-        const users = await User.find({
-            $or: [
-                { name: searchRegex },
-                { username: searchRegex }
-            ]
-        }).select('name username picture bio'); // Only return necessary fields
-        
-        res.status(200).json(users);
-    } catch (error) {
-        res.status(404).json({ message: error.message });
-    }
+  const { searchQuery } = req.query;
+  try {
+    const searchRegex = new RegExp(searchQuery, "i");
+
+    // Search by name or username
+    const users = await User.find({
+      $or: [
+        { name: searchRegex },
+        { username: searchRegex }
+      ]
+    }).select('name username picture bio'); // Only return necessary fields
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 export const updateUser = async (req, res) => {
-    const { id } = req.params;
-    const { name, bio, dob, picture } = req.body;
+  const { id } = req.params;
+  const { name, bio, dob, picture } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No user with id: ${id}`);
+  if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No user with id: ${id}`);
 
-    const updatedUser = { name, bio, dob, picture, _id: id };
+  const updatedUser = { name, bio, dob, picture, _id: id };
 
-    await User.findByIdAndUpdate(id, updatedUser, { new: true });
+  await User.findByIdAndUpdate(id, updatedUser, { new: true });
 
-    res.json(updatedUser);
+  res.json(updatedUser);
 };
 
 export const followUser = async (req, res) => {
-    const { id } = req.params;
-    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+  const { id } = req.params;
+  if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
 
-    try {
-        const targetUser = await User.findById(id);
-        const currentUser = await User.findById(req.userId);
+  try {
+    const targetUser = await User.findById(id);
+    const currentUser = await User.findById(req.userId);
 
-        if (!targetUser.followers.includes(req.userId)) {
-            await targetUser.updateOne({ $push: { followers: req.userId } });
-            await currentUser.updateOne({ $push: { following: id } });
+    if (!targetUser.followers.includes(req.userId)) {
+      await targetUser.updateOne({ $push: { followers: req.userId } });
+      await currentUser.updateOne({ $push: { following: id } });
 
-            const notification = await Notification.create({
-                user: targetUser._id,
-                sender: currentUser._id,
-                type: 'follow',
-                message: `${currentUser.name} started following you.`,
-            });
-            await targetUser.updateOne({ $push: { notifications: notification._id }});
-            // Send real-time notification using global.io (consistent with current implementation)
-            if (global.io) {
-                global.io.to(targetUser._id.toString()).emit('notification received', notification);
-                console.log(`🔔 Follow notification sent to ${targetUser._id}`);
-            }
-            
-            res.status(200).json({ message: "User followed successfully." });
-        } else {
-            res.status(400).json({ message: "You already follow this user." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+      const notification = await Notification.create({
+        user: targetUser._id,
+        sender: currentUser._id,
+        type: 'follow',
+        message: `${currentUser.name} started following you.`,
+      });
+      await targetUser.updateOne({ $push: { notifications: notification._id } });
+      // Send real-time notification using global.io (consistent with current implementation)
+      if (global.io) {
+        global.io.to(targetUser._id.toString()).emit('notification received', notification);
+        console.log(`🔔 Follow notification sent to ${targetUser._id}`);
+      }
+
+      res.status(200).json({ message: "User followed successfully." });
+    } else {
+      res.status(400).json({ message: "You already follow this user." });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const unfollowUser = async (req, res) => {
-    const { id } = req.params;
-    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+  const { id } = req.params;
+  if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
 
-    try {
-        const targetUser = await User.findById(id);
-        const currentUser = await User.findById(req.userId);
+  try {
+    const targetUser = await User.findById(id);
+    const currentUser = await User.findById(req.userId);
 
-        if (targetUser.followers.includes(req.userId)) {
-            await targetUser.updateOne({ $pull: { followers: req.userId } });
-            await currentUser.updateOne({ $pull: { following: id } });
-            res.status(200).json({ message: "User unfollowed successfully." });
-        } else {
-            res.status(400).json({ message: "You do not follow this user." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    if (targetUser.followers.includes(req.userId)) {
+      await targetUser.updateOne({ $pull: { followers: req.userId } });
+      await currentUser.updateOne({ $pull: { following: id } });
+      res.status(200).json({ message: "User unfollowed successfully." });
+    } else {
+      res.status(400).json({ message: "You do not follow this user." });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // --- NOTIFICATIONS ---
 export const getNotifications = async (req, res) => {
-    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+  if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
 
-    try {
-        const notifications = await Notification.find({ user: req.userId })
-            .populate("sender", "name picture") // Ensure this runs
-            .populate("post", "selectedFile") 
-            .sort({ createdAt: -1 }); // Newest first
-        
-        res.status(200).json(notifications);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    const notifications = await Notification.find({ user: req.userId })
+      .populate("sender", "name picture") // Ensure this runs
+      .populate("post", "selectedFile")
+      .sort({ createdAt: -1 }); // Newest first
+
+    res.status(200).json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const markNotificationsRead = async (req, res) => {
-    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+  if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
 
-    try {
-        await Notification.updateMany(
-            { user: req.userId, read: false },
-            { $set: { read: true } }
-        );
-        res.status(200).json({ message: "Marked all as read" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    await Notification.updateMany(
+      { user: req.userId, read: false },
+      { $set: { read: true } }
+    );
+    res.status(200).json({ message: "Marked all as read" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const clearNotifications = async (req, res) => {
-    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+  if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
 
-    try {
-        await Notification.deleteMany({ user: req.userId });
-        res.status(200).json({ message: "All notifications cleared" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    await Notification.deleteMany({ user: req.userId });
+    res.status(200).json({ message: "All notifications cleared" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 export const deleteUser = async (req, res) => {
-    const { id } = req.params;
-    try {
-        if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+  const { id } = req.params;
+  try {
+    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
 
-        await User.findByIdAndDelete(id);
-        res.status(200).json({ message: "Account deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    await User.findByIdAndDelete(id);
+    res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- USER SETTINGS ---
+
+export const getUserSettings = async (req, res) => {
+  try {
+    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+
+    const user = await User.findById(req.userId).select('settings name');
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({
+      settings: user.settings || {
+        allowMessages: true,
+        likesNotif: true,
+        commentsNotif: true,
+        followsNotif: true,
+        mentionsNotif: true,
+      },
+      name: user.name
+    });
+  } catch (error) {
+    console.error("Get settings error:", error);
+    res.status(500).json({ message: "Failed to fetch settings." });
+  }
+};
+
+export const updateUserSettings = async (req, res) => {
+  try {
+    if (!req.userId) return res.status(401).json({ message: "Unauthenticated" });
+
+    const { settings, name } = req.body;
+
+    const updateData = {};
+
+    // Update settings if provided
+    if (settings) {
+      const allowedKeys = ['allowMessages', 'likesNotif', 'commentsNotif', 'followsNotif', 'mentionsNotif'];
+      for (const key of allowedKeys) {
+        if (typeof settings[key] === 'boolean') {
+          updateData[`settings.${key}`] = settings[key];
+        }
+      }
     }
+
+    // Update display name if provided
+    if (name && name.trim().length > 0) {
+      updateData.name = name.trim();
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: updateData },
+      { new: true }
+    ).select('settings name');
+
+    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({
+      settings: updatedUser.settings,
+      name: updatedUser.name,
+      message: "Settings saved successfully!"
+    });
+  } catch (error) {
+    console.error("Update settings error:", error);
+    res.status(500).json({ message: "Failed to save settings." });
+  }
 };

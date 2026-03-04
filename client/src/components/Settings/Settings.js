@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { 
-    Container, Paper, Typography, Box, Switch, Button, 
-    Divider, TextField, Grow, MenuItem, Select, FormControl,
-    InputLabel, Alert
+import React, { useState, useEffect } from 'react';
+import {
+  Container, Paper, Typography, Box, Switch, Button,
+  Divider, TextField, Grow, MenuItem, Select, FormControl,
+  InputLabel, Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -30,73 +30,109 @@ const Settings = () => {
   const user = JSON.parse(localStorage.getItem('profile'));
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+
   // State for settings
   const [settings, setSettings] = useState({
-      allowMessages: true,
-      likesNotif: true,
-      commentsNotif: true,
-      followsNotif: true,
-      mentionsNotif: true,
+    allowMessages: true,
+    likesNotif: true,
+    commentsNotif: true,
+    followsNotif: true,
+    mentionsNotif: true,
   });
-  
+
   const [userInfo, setUserInfo] = useState({
-      name: user?.result?.name || '',
-      email: user?.result?.email || '',
+    name: user?.result?.name || '',
+    email: user?.result?.email || '',
   });
-  
+
   const [loading, setLoading] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Load saved settings from server on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data } = await api.getUserSettings();
+        if (data.settings) {
+          setSettings(data.settings);
+        }
+        if (data.name) {
+          setUserInfo(prev => ({ ...prev, name: data.name }));
+        }
+        setSettingsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        setSettingsLoaded(true); // Use defaults on error
+      }
+    };
+    if (user?.result) {
+      loadSettings();
+    }
+  }, []);
 
   const handleToggle = (name) => {
-      setSettings({ ...settings, [name]: !settings[name] });
+    setSettings({ ...settings, [name]: !settings[name] });
   };
 
   const handleLanguageChange = (event) => {
-      const newLanguage = event.target.value;
-      changeLanguage(newLanguage);
-      showSuccess(`Language changed to ${availableLanguages.find(lang => lang.code === newLanguage)?.name}`);
+    const newLanguage = event.target.value;
+    changeLanguage(newLanguage);
+    showSuccess(`Language changed to ${availableLanguages.find(lang => lang.code === newLanguage)?.name}`);
   };
 
   const handleSaveSettings = async () => {
-      setLoading(true);
-      try {
-          // Here you would typically save settings to the server
-          // await api.updateUserSettings(settings);
-          showSuccess(t('settingsSavedSuccessfully'));
-      } catch (error) {
-          showError(t('failedToSaveSettings'));
-      } finally {
-          setLoading(false);
+    setLoading(true);
+    try {
+      const { data } = await api.updateUserSettings({
+        settings,
+        name: userInfo.name,
+      });
+
+      // Update localStorage profile with new name
+      if (data.name && user) {
+        const updatedProfile = {
+          ...user,
+          result: { ...user.result, name: data.name }
+        };
+        localStorage.setItem('profile', JSON.stringify(updatedProfile));
       }
+
+      showSuccess(t('settingsSavedSuccessfully'));
+    } catch (error) {
+      console.error('Save settings error:', error);
+      showError(error.response?.data?.message || t('failedToSaveSettings'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // DELETE ACCOUNT LOGIC
   const handleDeleteAccount = async () => {
-      if(window.confirm(t('confirmDeleteAccount'))) {
-          try {
-              const userId = user?.result?._id || user?.result?.googleId;
-              await api.deleteAccount(userId);
-              
-              // Logout user
-              dispatch({ type: actionType.LOGOUT });
-              navigate('/auth');
-              showSuccess(t('accountDeletedSuccessfully'));
-          } catch (error) {
-              console.log(error);
-              showError(t('errorDeletingAccount'));
-          }
+    if (window.confirm(t('confirmDeleteAccount'))) {
+      try {
+        const userId = user?.result?._id || user?.result?.googleId;
+        await api.deleteAccount(userId);
+
+        // Logout user
+        dispatch({ type: actionType.LOGOUT });
+        navigate('/auth');
+        showSuccess(t('accountDeletedSuccessfully'));
+      } catch (error) {
+        console.log(error);
+        showError(t('errorDeletingAccount'));
       }
+    }
   };
 
   return (
     <Box sx={commonStyles.container}>
       <Container maxWidth="md" sx={{ pt: 4, pb: 4 }}>
-        
-        <Typography 
-          variant="h4" 
-          sx={{ 
-            fontWeight: 700, 
-            mb: 4, 
+
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            mb: 4,
             color: colors.textPrimary,
             textAlign: { xs: 'center', md: 'left' }
           }}
@@ -107,9 +143,9 @@ const Settings = () => {
         {/* SECTION 1: ACCOUNT */}
         <Paper sx={{ ...commonStyles.card, p: 4, mb: 3 }}>
           <Box display="flex" alignItems="center" gap={2} mb={3}>
-            <Box sx={{ 
-              p: 1.5, 
-              borderRadius: 2, 
+            <Box sx={{
+              p: 1.5,
+              borderRadius: 2,
               bgcolor: `${colors.primary}20`,
               display: 'flex',
               alignItems: 'center',
@@ -127,17 +163,17 @@ const Settings = () => {
             </Box>
           </Box>
           <Divider sx={{ mb: 3, borderColor: colors.darkTertiary }} />
-          
+
           <Box display="flex" flexDirection="column" gap={3}>
             <Box>
               <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
                 {t('displayName')}
               </Typography>
-              <TextField 
-                fullWidth 
+              <TextField
+                fullWidth
                 placeholder={t('enterDisplayName')}
                 value={userInfo.name}
-                onChange={(e) => setUserInfo({...userInfo, name: e.target.value})}
+                onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: colors.darkSecondary,
@@ -154,10 +190,10 @@ const Settings = () => {
               <Typography variant="subtitle2" sx={{ color: colors.textPrimary, mb: 1, fontWeight: 600 }}>
                 {t('emailAddress')}
               </Typography>
-              <TextField 
-                fullWidth 
-                value={userInfo.email} 
-                disabled 
+              <TextField
+                fullWidth
+                value={userInfo.email}
+                disabled
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: colors.darkTertiary,
@@ -217,9 +253,9 @@ const Settings = () => {
         {/* SECTION 2: PRIVACY */}
         <Paper sx={{ ...commonStyles.card, p: 4, mb: 3 }}>
           <Box display="flex" alignItems="center" gap={2} mb={3}>
-            <Box sx={{ 
-              p: 1.5, 
-              borderRadius: 2, 
+            <Box sx={{
+              p: 1.5,
+              borderRadius: 2,
               bgcolor: `${colors.accent}20`,
               display: 'flex',
               alignItems: 'center',
@@ -238,12 +274,12 @@ const Settings = () => {
           </Box>
           <Divider sx={{ mb: 3, borderColor: colors.darkTertiary }} />
 
-          <Box display="flex" justifyContent="space-between" alignItems="center" p={2} 
-               sx={{ bgcolor: colors.darkSecondary, borderRadius: 2, border: `1px solid ${colors.darkTertiary}` }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" p={2}
+            sx={{ bgcolor: colors.darkSecondary, borderRadius: 2, border: `1px solid ${colors.darkTertiary}` }}>
             <Box display="flex" alignItems="center" gap={2}>
-              <Box sx={{ 
-                p: 1, 
-                borderRadius: 1, 
+              <Box sx={{
+                p: 1,
+                borderRadius: 1,
                 bgcolor: `${colors.primary}20`,
                 display: 'flex',
                 alignItems: 'center',
@@ -260,9 +296,9 @@ const Settings = () => {
                 </Typography>
               </Box>
             </Box>
-            <Switch 
-              checked={settings.allowMessages} 
-              onChange={() => handleToggle('allowMessages')} 
+            <Switch
+              checked={settings.allowMessages}
+              onChange={() => handleToggle('allowMessages')}
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
                   color: colors.primary,
@@ -278,9 +314,9 @@ const Settings = () => {
         {/* SECTION 3: NOTIFICATIONS */}
         <Paper sx={{ ...commonStyles.card, p: 4, mb: 3 }}>
           <Box display="flex" alignItems="center" gap={2} mb={3}>
-            <Box sx={{ 
-              p: 1.5, 
-              borderRadius: 2, 
+            <Box sx={{
+              p: 1.5,
+              borderRadius: 2,
               bgcolor: `${colors.secondary}20`,
               display: 'flex',
               alignItems: 'center',
@@ -306,16 +342,16 @@ const Settings = () => {
               { label: t('newFollowers'), key: 'followsNotif', desc: t('getNotifiedWhenSomeone') + ' ' + t('followsYou'), icon: '👥' },
               { label: t('mentions'), key: 'mentionsNotif', desc: t('getNotifiedWhenSomeone') + ' ' + t('mentionsYou'), icon: '📢' }
             ].map((item) => (
-              <Box key={item.key} 
-                   sx={{ 
-                     p: 2, 
-                     bgcolor: colors.darkSecondary, 
-                     borderRadius: 2, 
-                     border: `1px solid ${colors.darkTertiary}`,
-                     display: 'flex', 
-                     justifyContent: 'space-between', 
-                     alignItems: 'center' 
-                   }}>
+              <Box key={item.key}
+                sx={{
+                  p: 2,
+                  bgcolor: colors.darkSecondary,
+                  borderRadius: 2,
+                  border: `1px solid ${colors.darkTertiary}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Typography sx={{ fontSize: '1.5rem' }}>{item.icon}</Typography>
                   <Box>
@@ -327,9 +363,9 @@ const Settings = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Switch 
-                  checked={settings[item.key]} 
-                  onChange={() => handleToggle(item.key)} 
+                <Switch
+                  checked={settings[item.key]}
+                  onChange={() => handleToggle(item.key)}
                   sx={{
                     '& .MuiSwitch-switchBase.Mui-checked': {
                       color: colors.primary,
@@ -346,24 +382,24 @@ const Settings = () => {
 
         {/* ACTION BUTTONS */}
         <Box display="flex" gap={2} flexDirection={{ xs: 'column', sm: 'row' }}>
-          <Button 
+          <Button
             variant="contained"
-            size="large" 
-            startIcon={<SaveIcon />} 
+            size="large"
+            startIcon={<SaveIcon />}
             onClick={handleSaveSettings}
             disabled={loading}
             sx={{
               ...commonStyles.button.primary,
               flex: 1,
-              py: 1.5, 
+              py: 1.5,
               fontWeight: 600
             }}
           >
             {loading ? t('saving') : t('save')}
           </Button>
-          
-          <Button 
-            variant="outlined" 
+
+          <Button
+            variant="outlined"
             startIcon={<DeleteForeverIcon />}
             onClick={handleDeleteAccount}
             sx={{
@@ -375,7 +411,7 @@ const Settings = () => {
               bgcolor: 'transparent',
               textTransform: 'none',
               fontSize: '1rem',
-              '&:hover': { 
+              '&:hover': {
                 bgcolor: 'rgba(239, 68, 68, 0.1)',
                 borderColor: '#ef4444',
                 color: '#ff6b6b'

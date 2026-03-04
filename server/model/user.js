@@ -7,11 +7,11 @@ const userSchema = mongoose.Schema({
   id: { type: String },
   googleId: { type: String },
   picture: { type: String },
-  
+
   // New Profile Fields
-  username: { 
-    type: String, 
-    unique: true, 
+  username: {
+    type: String,
+    unique: true,
     sparse: true, // Allows null values while maintaining uniqueness for non-null values
     lowercase: true, // Automatically convert to lowercase
     trim: true, // Remove whitespace
@@ -23,11 +23,20 @@ const userSchema = mongoose.Schema({
   dob: { type: String, default: "" }, // Format: YYYY-MM-DD (legacy field)
   dateOfBirth: { type: Date }, // New field for date of birth
   backgroundImage: { type: String, default: "" }, // Profile background image
-  
+
+  // User Settings
+  settings: {
+    allowMessages: { type: Boolean, default: true },
+    likesNotif: { type: Boolean, default: true },
+    commentsNotif: { type: Boolean, default: true },
+    followsNotif: { type: Boolean, default: true },
+    mentionsNotif: { type: Boolean, default: true },
+  },
+
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  
+
   // Additional fields for better user experience
   isEmailVerified: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },

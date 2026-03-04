@@ -627,15 +627,17 @@ const Profile = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          p: 2
+          p: { xs: 1, sm: 2 } // Smaller padding on mobile
         }}
       >
         <Box
           sx={{
             position: 'relative',
-            maxWidth: '95vw',
-            maxHeight: '95vh',
-            outline: 'none'
+            maxWidth: { xs: '98vw', sm: '95vw' }, // More space on mobile
+            maxHeight: { xs: '98vh', sm: '95vh' },
+            outline: 'none',
+            width: '100%',
+            height: 'auto'
           }}
         >
           {/* Close Button */}
@@ -643,17 +645,19 @@ const Profile = () => {
             onClick={handleCloseModal}
             sx={{
               position: 'absolute',
-              top: -50,
-              right: -10,
+              top: { xs: -40, sm: -50 }, // Closer to image on mobile
+              right: { xs: 0, sm: -10 },
               backgroundColor: 'rgba(0, 0, 0, 0.8)',
               color: 'white',
               zIndex: 1,
+              width: { xs: 36, sm: 48 }, // Smaller on mobile
+              height: { xs: 36, sm: 48 },
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.9)'
               }
             }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
           </IconButton>
           
           {/* Image Title */}
@@ -662,13 +666,17 @@ const Profile = () => {
               variant="h6"
               sx={{
                 position: 'absolute',
-                top: -50,
+                top: { xs: -40, sm: -50 },
                 left: 0,
                 color: 'white',
                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: '8px 16px',
+                padding: { xs: '6px 12px', sm: '8px 16px' },
                 borderRadius: '20px',
-                fontSize: '0.9rem'
+                fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                maxWidth: { xs: '60vw', sm: 'auto' }, // Prevent overflow on mobile
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
               }}
             >
               {modalImageTitle}
@@ -681,7 +689,8 @@ const Profile = () => {
             alt={modalImageTitle || 'Full size image'}
             style={{
               width: '100%',
-              height: '100%',
+              height: 'auto',
+              maxHeight: '90vh', // Ensure it fits on mobile
               objectFit: 'contain',
               borderRadius: '10px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'

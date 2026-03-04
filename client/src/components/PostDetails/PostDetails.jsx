@@ -100,19 +100,19 @@ const PostDetails = () => {
 
   return (
     <Paper style={{ padding: '20px', borderRadius: '15px', marginTop: '20px', backgroundColor: '#1e293b', color: 'white' }} elevation={6}>
-      <div style={{ display: 'flex', width: '100%', flexDirection: 'column-reverse' }}> {/* Mobile friendly reverse */}
+      <div style={{ display: 'flex', width: '100%', flexDirection: window.innerWidth < 768 ? 'column' : 'column-reverse' }}> {/* Always column on mobile */}
         
         {/* TEXT CONTENT */}
         <div style={{ borderRadius: '20px', margin: '10px', flex: 1 }}>
-          <Typography variant="h3" component="h2" sx={{ fontWeight: 'bold' }}>{post.title}</Typography>
+          <Typography variant="h3" component="h2" sx={{ fontWeight: 'bold', fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' } }}>{post.title}</Typography>
           
-          <Typography gutterBottom variant="h6" color="#94a3b8" component="h2">
+          <Typography gutterBottom variant="h6" color="#94a3b8" component="h2" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
              {post.tags && Array.isArray(post.tags) && post.tags.length > 0 
                ? post.tags.map((tag) => `#${tag} `).join('') 
                : 'No tags'}
           </Typography>
           
-          <Typography variant="body1" component="p" gutterBottom sx={{ fontStyle: 'italic', color: '#cbd5e1' }}>
+          <Typography variant="body1" component="p" gutterBottom sx={{ fontStyle: 'italic', color: '#cbd5e1', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
              {post.message && post.message.length > 300 ? 'Scroll down for full story...' : ''}
           </Typography>
 
@@ -121,7 +121,7 @@ const PostDetails = () => {
             component="div" 
             sx={{ 
                 marginTop: '20px', 
-                fontSize: '1.1rem', 
+                fontSize: { xs: '1rem', sm: '1.1rem' }, 
                 lineHeight: '1.8',
                 color: '#e2e8f0',
                 '& img': { maxWidth: '100%', borderRadius: '10px' }, // Style images inside content
@@ -132,8 +132,8 @@ const PostDetails = () => {
           
           <Divider style={{ margin: '20px 0', backgroundColor: '#334155' }} />
           
-          <Typography variant="h6">Created by: {post.name || post.creator?.name || 'Unknown'}</Typography>
-          <Typography variant="body1">{moment(post.createdAt).fromNow()}</Typography>
+          <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>Created by: {post.name || post.creator?.name || 'Unknown'}</Typography>
+          <Typography variant="body1" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>{moment(post.createdAt).fromNow()}</Typography>
           
           <Divider style={{ margin: '20px 0', backgroundColor: '#334155' }} />
           
@@ -144,7 +144,7 @@ const PostDetails = () => {
         </div>
 
         {/* IMAGE SECTION */}
-        <div style={{ marginLeft: '20px', flex: 1 }}>
+        <div style={{ marginLeft: window.innerWidth < 768 ? '0' : '20px', flex: 1, marginBottom: window.innerWidth < 768 ? '20px' : '0' }}>
           <Box 
             sx={{ 
               position: 'relative',
@@ -163,7 +163,7 @@ const PostDetails = () => {
                 borderRadius: '20px', 
                 objectFit: 'cover', 
                 width: '100%', 
-                maxHeight: '500px',
+                maxHeight: window.innerWidth < 768 ? '300px' : '500px', // Smaller on mobile
                 transition: 'transform 0.3s ease'
               }} 
               src={post.selectedFile || 'https://user-images.githubusercontent.com/194400/49531010-48dad180-f8b1-11e8-8d89-1e61320e1d82.png'} 
@@ -179,7 +179,7 @@ const PostDetails = () => {
                 transform: 'translate(-50%, -50%)',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
                 borderRadius: '50%',
-                padding: '12px',
+                padding: { xs: '8px', sm: '12px' },
                 opacity: 0,
                 transition: 'opacity 0.3s ease',
                 display: 'flex',
@@ -187,7 +187,7 @@ const PostDetails = () => {
                 justifyContent: 'center'
               }}
             >
-              <ZoomInIcon sx={{ color: 'white', fontSize: '2rem' }} />
+              <ZoomInIcon sx={{ color: 'white', fontSize: { xs: '1.5rem', sm: '2rem' } }} />
             </Box>
             {/* Hint Text */}
             <Box
@@ -199,9 +199,9 @@ const PostDetails = () => {
                 transform: 'translateX(-50%)',
                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
                 color: 'white',
-                padding: '4px 12px',
+                padding: { xs: '3px 8px', sm: '4px 12px' },
                 borderRadius: '20px',
-                fontSize: '0.8rem',
+                fontSize: { xs: '0.7rem', sm: '0.8rem' },
                 opacity: 0,
                 transition: 'opacity 0.3s ease'
               }}
@@ -220,15 +220,17 @@ const PostDetails = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          p: 2
+          p: { xs: 1, sm: 2 }
         }}
       >
         <Box
           sx={{
             position: 'relative',
-            maxWidth: '95vw',
-            maxHeight: '95vh',
-            outline: 'none'
+            maxWidth: { xs: '98vw', sm: '95vw' },
+            maxHeight: { xs: '98vh', sm: '95vh' },
+            outline: 'none',
+            width: '100%',
+            height: 'auto'
           }}
         >
           {/* Close Button */}
@@ -236,17 +238,19 @@ const PostDetails = () => {
             onClick={handleCloseModal}
             sx={{
               position: 'absolute',
-              top: -50,
-              right: -10,
+              top: { xs: -40, sm: -50 },
+              right: { xs: 0, sm: -10 },
               backgroundColor: 'rgba(0, 0, 0, 0.8)',
               color: 'white',
               zIndex: 1,
+              width: { xs: 36, sm: 48 },
+              height: { xs: 36, sm: 48 },
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.9)'
               }
             }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
           </IconButton>
           
           {/* Full Size Image */}
@@ -255,7 +259,8 @@ const PostDetails = () => {
             alt={post?.title || 'Full size image'}
             style={{
               width: '100%',
-              height: '100%',
+              height: 'auto',
+              maxHeight: '90vh',
               objectFit: 'contain',
               borderRadius: '10px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'

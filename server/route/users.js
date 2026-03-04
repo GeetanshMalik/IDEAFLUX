@@ -1,22 +1,24 @@
 import express from 'express';
-import { 
-    signin, 
+import {
+    signin,
     signup,
     verifyEmail,
     resendOTP,
-    googleSignin, 
+    googleSignin,
     getUser,
     getUserProfile,
     updateUserProfile,
     checkUsernameAvailability,
-    searchUsers, 
-    followUser, 
+    searchUsers,
+    followUser,
     unfollowUser,
     updateUser,
-    getNotifications, 
+    getNotifications,
     markNotificationsRead,
     clearNotifications,
-    deleteUser 
+    deleteUser,
+    getUserSettings,
+    updateUserSettings
 } from '../controller/users.js';
 import { markNotificationRead } from '../controller/notifications.js';
 import auth from '../middleware/auth.js';
@@ -39,7 +41,7 @@ router.patch('/:id/follow', auth, followUser);
 router.patch('/:id/unfollow', auth, unfollowUser);
 
 // Notifications
-router.get('/notifications', auth, getNotifications); 
+router.get('/notifications', auth, getNotifications);
 
 /* CORRECT ORDER FOR ROUTES */
 const safeRouter = express.Router();
@@ -55,7 +57,9 @@ safeRouter.get('/search', searchUsers);
 safeRouter.get('/check-username/:username', checkUsernameAvailability);
 safeRouter.get('/profile/:id', getUserProfile);
 safeRouter.patch('/profile/:id', auth, updateUserProfile);
-safeRouter.get('/notifications', auth, getNotifications); 
+safeRouter.get('/settings', auth, getUserSettings);
+safeRouter.patch('/settings', auth, updateUserSettings);
+safeRouter.get('/notifications', auth, getNotifications);
 safeRouter.patch('/notifications/read', auth, markNotificationsRead);
 safeRouter.delete('/notifications', auth, clearNotifications);
 safeRouter.patch('/notifications/:id/read', auth, markNotificationRead);
