@@ -465,17 +465,24 @@ export const followUser = async (req, res) => {
       await targetUser.updateOne({ $push: { followers: req.userId } });
       await currentUser.updateOne({ $push: { following: id } });
 
-      const notification = await Notification.create({
-        user: targetUser._id,
-        sender: currentUser._id,
-        type: 'follow',
-        message: `${currentUser.name} started following you.`,
-      });
-      await targetUser.updateOne({ $push: { notifications: notification._id } });
-      // Send real-time notification using global.io (consistent with current implementation)
-      if (global.io) {
-        global.io.to(targetUser._id.toString()).emit('notification received', notification);
-        console.log(`🔔 Follow notification sent to ${targetUser._id}`);
+      // Check target user's notification preferences before creating notification
+      const shouldNotify = targetUser.settings?.followsNotif !== false;
+
+      if (shouldNotify) {
+        const notification = await Notification.create({
+          user: targetUser._id,
+          sender: currentUser._id,
+          type: 'follow',
+          message: `${currentUser.name} started following you.`,
+        });
+        await targetUser.updateOne({ $push: { notifications: notification._id } });
+        // Send real-time notification
+        if (global.io) {
+          global.io.to(targetUser._id.toString()).emit('notification received', notification);
+          console.log(`🔔 Follow notification sent to ${targetUser._id}`);
+        }
+      } else {
+        console.log(`🔕 Follow notification suppressed for ${targetUser._id} (turned off in settings)`);
       }
 
       res.status(200).json({ message: "User followed successfully." });

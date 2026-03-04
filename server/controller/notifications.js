@@ -1,9 +1,26 @@
 import Notification from '../model/notification.js';
 import User from '../model/user.js';
 
-// Create notification helper
+// Create notification helper — respects user notification preferences
 export const createNotification = async (userId, senderId, type, message, postId = null) => {
   try {
+    // Check recipient's notification preferences
+    const recipient = await User.findById(userId).select('settings');
+    if (recipient?.settings) {
+      const settingsMap = {
+        'like': 'likesNotif',
+        'comment': 'commentsNotif',
+        'follow': 'followsNotif',
+        'mention': 'mentionsNotif',
+      };
+
+      const settingKey = settingsMap[type];
+      if (settingKey && recipient.settings[settingKey] === false) {
+        console.log(`🔕 Notification suppressed: ${type} for user ${userId} (turned off in settings)`);
+        return null;
+      }
+    }
+
     const notification = await Notification.create({
       user: userId,
       sender: senderId,
@@ -24,13 +41,6 @@ export const createNotification = async (userId, senderId, type, message, postId
       console.log(`📤 Attempting to send notification to room: ${userId.toString()}`);
       global.io.to(userId.toString()).emit('notification received', notification);
       console.log(`🔔 Notification sent to ${userId}: ${type} - ${message}`);
-      
-      // Also emit to all connected sockets for debugging
-      global.io.emit('debug-notification', {
-        targetUser: userId.toString(),
-        notification: notification,
-        timestamp: new Date()
-      });
     } else {
       console.log('⚠️ Socket.io not available for notification');
     }
@@ -85,7 +95,7 @@ export const markNotificationsRead = async (req, res) => {
 export const markNotificationRead = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!req.userId) {
       return res.status(401).json({ message: "Authentication required." });
     }
@@ -106,7 +116,7 @@ export const markNotificationRead = async (req, res) => {
 export const deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!req.userId) {
       return res.status(401).json({ message: "Authentication required." });
     }

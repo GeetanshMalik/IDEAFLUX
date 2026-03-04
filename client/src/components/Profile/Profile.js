@@ -18,7 +18,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 import { getUser, followUser, unfollowUser, updateUserProfile } from '../../actions/user';
 import { getPosts } from '../../actions/posts';
-import * as api from '../../api'; 
+import * as api from '../../api';
 import Post from '../../components/Posts/Post/Post';
 
 const Profile = () => {
@@ -34,18 +34,18 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [userPosts, setUserPosts] = useState([]); // Add state for user posts
-  
+
   // Image modal states
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [modalImageSrc, setModalImageSrc] = useState('');
   const [modalImageTitle, setModalImageTitle] = useState('');
 
   // Form State - Added username and backgroundImage fields
-  const [formData, setFormData] = useState({ 
-    name: '', 
+  const [formData, setFormData] = useState({
+    name: '',
     username: '', // Added username
-    bio: '', 
-    dob: '', 
+    bio: '',
+    dob: '',
     picture: '',
     backgroundImage: '' // Added background image
   });
@@ -101,11 +101,11 @@ const Profile = () => {
 
   useEffect(() => {
     if (userProfile) {
-      setFormData({ 
-        name: userProfile.name, 
+      setFormData({
+        name: userProfile.name,
         username: userProfile.username || '', // Added username
-        bio: userProfile.bio || '', 
-        dob: userProfile.dob || '', 
+        bio: userProfile.bio || '',
+        dob: userProfile.dob || '',
         picture: userProfile.picture,
         backgroundImage: userProfile.backgroundImage || '' // Added background image
       });
@@ -149,7 +149,7 @@ const Profile = () => {
   const handleUsernameChange = async (e) => {
     const username = e.target.value.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '');
     setFormData({ ...formData, username });
-    
+
     if (username && username !== userProfile?.username) {
       await checkUsername(username);
     } else {
@@ -164,25 +164,30 @@ const Profile = () => {
 
   const handleFollow = async () => {
     if (!currentUser) return navigate('/auth');
-    
+
     if (isFollowing) {
       dispatch(unfollowUser(userId)); // Changed from id to userId
       setIsFollowing(false);
-      if(userProfile.followers) userProfile.followers.pop(); 
+      if (userProfile.followers) userProfile.followers.pop();
     } else {
       dispatch(followUser(userId)); // Changed from id to userId
       setIsFollowing(true);
-      if(userProfile.followers) userProfile.followers.push(currentUserId);
+      if (userProfile.followers) userProfile.followers.push(currentUserId);
     }
   };
 
   const handleMessage = async () => {
     if (!currentUser) return navigate('/auth');
     try {
-      await api.accessChat(userId); // Changed from id to userId
+      await api.accessChat(userId);
       navigate('/chat');
     } catch (error) {
-      console.log("Error chat:", error);
+      if (error.response?.status === 403 && error.response?.data?.dmRestricted) {
+        alert(error.response.data.message);
+      } else {
+        console.log("Error chat:", error);
+        alert("Failed to start chat. Please try again.");
+      }
     }
   };
 
@@ -202,10 +207,10 @@ const Profile = () => {
       delete profileData.dob; // Remove the old field
 
       await dispatch(updateUserProfile(userProfile._id, profileData));
-      
+
       // Force immediate re-fetch to get updated data
       await dispatch(getUser(userProfile._id));
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error('Profile update failed:', error);
@@ -221,10 +226,10 @@ const Profile = () => {
       <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
         <Paper sx={{ ...commonStyles.card, p: 0, overflow: 'hidden', mb: 4 }}>
           {/* 1. BANNER AREA */}
-          <Box sx={{ 
-            height: { xs: '120px', md: '200px' }, 
-            background: (isEditing ? formData.backgroundImage : userProfile.backgroundImage) 
-              ? `url(${isEditing ? formData.backgroundImage : userProfile.backgroundImage})` 
+          <Box sx={{
+            height: { xs: '120px', md: '200px' },
+            background: (isEditing ? formData.backgroundImage : userProfile.backgroundImage)
+              ? `url(${isEditing ? formData.backgroundImage : userProfile.backgroundImage})`
               : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 50%, ${colors.accent} 100%)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -239,12 +244,12 @@ const Profile = () => {
               opacity: (isEditing ? formData.backgroundImage : userProfile.backgroundImage) ? 1 : 0
             }
           }}
-          onClick={() => {
-            const bgImage = isEditing ? formData.backgroundImage : userProfile.backgroundImage;
-            if (bgImage) {
-              handleImageClick(bgImage, `${userProfile.name}'s Background`);
-            }
-          }}
+            onClick={() => {
+              const bgImage = isEditing ? formData.backgroundImage : userProfile.backgroundImage;
+              if (bgImage) {
+                handleImageClick(bgImage, `${userProfile.name}'s Background`);
+              }
+            }}
           >
             {/* Background Image Zoom Overlay */}
             {(isEditing ? formData.backgroundImage : userProfile.backgroundImage) && (
@@ -270,9 +275,9 @@ const Profile = () => {
             )}
 
             {isEditing && (
-              <Box sx={{ 
-                position: 'absolute', 
-                top: 16, 
+              <Box sx={{
+                position: 'absolute',
+                top: 16,
                 right: 16,
                 bgcolor: 'rgba(0,0,0,0.7)',
                 borderRadius: 2,
@@ -282,14 +287,14 @@ const Profile = () => {
                 <Typography variant="caption" sx={{ color: 'white', display: 'block', mb: 1 }}>
                   Background Image
                 </Typography>
-                <FileBase 
-                  type="file" 
-                  multiple={false} 
-                  onDone={({ base64 }) => setFormData({ ...formData, backgroundImage: base64 })} 
+                <FileBase
+                  type="file"
+                  multiple={false}
+                  onDone={({ base64 }) => setFormData({ ...formData, backgroundImage: base64 })}
                 />
                 {formData.backgroundImage && (
-                  <Button 
-                    size="small" 
+                  <Button
+                    size="small"
                     onClick={(e) => {
                       e.stopPropagation();
                       setFormData({ ...formData, backgroundImage: '' });
@@ -323,20 +328,20 @@ const Profile = () => {
                       }
                     }}
                   >
-                    <Avatar 
-                      src={isEditing ? formData.picture : userProfile.picture} 
-                      alt={userProfile.name} 
-                      sx={{ 
-                        width: { xs: 120, md: 160 }, 
-                        height: { xs: 120, md: 160 }, 
-                        fontSize: '4rem', 
-                        bgcolor: colors.primary, 
-                        border: `5px solid ${colors.darkSecondary}` 
+                    <Avatar
+                      src={isEditing ? formData.picture : userProfile.picture}
+                      alt={userProfile.name}
+                      sx={{
+                        width: { xs: 120, md: 160 },
+                        height: { xs: 120, md: 160 },
+                        fontSize: '4rem',
+                        bgcolor: colors.primary,
+                        border: `5px solid ${colors.darkSecondary}`
                       }}
                     >
                       {userProfile.name.charAt(0)}
                     </Avatar>
-                    
+
                     {/* Avatar Zoom Overlay */}
                     {(isEditing ? formData.picture : userProfile.picture) && (
                       <Box
@@ -360,13 +365,13 @@ const Profile = () => {
                       </Box>
                     )}
                   </Box>
-                  
+
                   {isEditing && (
                     <Box sx={{ mt: 1, textAlign: 'center' }}>
-                      <FileBase 
-                        type="file" 
-                        multiple={false} 
-                        onDone={({ base64 }) => setFormData({ ...formData, picture: base64 })} 
+                      <FileBase
+                        type="file"
+                        multiple={false}
+                        onDone={({ base64 }) => setFormData({ ...formData, picture: base64 })}
                       />
                     </Box>
                   )}
@@ -379,10 +384,10 @@ const Profile = () => {
                   <Box>
                     {isEditing ? (
                       <Box display="flex" flexDirection="column" gap={2} mb={2}>
-                        <TextField 
+                        <TextField
                           label="Display Name"
-                          value={formData.name} 
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           sx={{
                             ...commonStyles.input,
                             '& .MuiOutlinedInput-root': {
@@ -397,9 +402,9 @@ const Profile = () => {
                             '& input': { color: colors.textPrimary }
                           }}
                         />
-                        <TextField 
+                        <TextField
                           label="Username"
-                          value={formData.username} 
+                          value={formData.username}
                           onChange={handleUsernameChange}
                           error={!!usernameError}
                           helperText={usernameError || 'Choose a unique username (letters, numbers, underscore only)'}
@@ -445,20 +450,20 @@ const Profile = () => {
                   <Box sx={{ mt: 1 }}>
                     {isOwner ? (
                       isEditing ? (
-                        <Button 
-                          variant="contained" 
-                          startIcon={<SaveIcon />} 
-                          onClick={handleUpdateProfile} 
+                        <Button
+                          variant="contained"
+                          startIcon={<SaveIcon />}
+                          onClick={handleUpdateProfile}
                           disabled={!!usernameError}
                           sx={commonStyles.button.primary}
                         >
                           Save Profile
                         </Button>
                       ) : (
-                        <Button 
-                          variant="outlined" 
-                          startIcon={<EditIcon />} 
-                          onClick={() => setIsEditing(true)} 
+                        <Button
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => setIsEditing(true)}
                           sx={commonStyles.button.ghost}
                         >
                           Edit Profile
@@ -466,8 +471,8 @@ const Profile = () => {
                       )
                     ) : (
                       <Box display="flex" gap={2} flexDirection={{ xs: 'column', sm: 'row' }}>
-                        <Button 
-                          variant="contained" 
+                        <Button
+                          variant="contained"
                           onClick={handleFollow}
                           startIcon={isFollowing ? <PersonRemoveIcon /> : <PersonAddIcon />}
                           sx={{
@@ -477,8 +482,8 @@ const Profile = () => {
                         >
                           {isFollowing ? 'Unfollow' : 'Follow'}
                         </Button>
-                        <Button 
-                          variant="outlined" 
+                        <Button
+                          variant="outlined"
                           onClick={handleMessage}
                           startIcon={<MessageIcon />}
                           sx={{
@@ -497,12 +502,12 @@ const Profile = () => {
                 <Box sx={{ mt: 3, maxWidth: '600px' }}>
                   {isEditing ? (
                     <Box display="flex" flexDirection="column" gap={2}>
-                      <TextField 
+                      <TextField
                         label="Bio / About Me"
-                        multiline 
+                        multiline
                         rows={3}
-                        value={formData.bio} 
-                        onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                        value={formData.bio}
+                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                         sx={{
                           ...commonStyles.input,
                           '& .MuiOutlinedInput-root': {
@@ -517,11 +522,11 @@ const Profile = () => {
                           '& textarea': { color: colors.textPrimary }
                         }}
                       />
-                      <TextField 
+                      <TextField
                         label="Date of Birth"
                         type="date"
-                        value={formData.dob} 
-                        onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                        value={formData.dob}
+                        onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                         InputLabelProps={{ shrink: true }}
                         sx={{
                           ...commonStyles.input,
@@ -544,12 +549,12 @@ const Profile = () => {
                         {userProfile.bio || "No bio yet."}
                       </Typography>
                       {userProfile.dob && (
-                        <Box display="flex" alignItems="center" gap={1} sx={{ 
-                          color: colors.textSecondary, 
-                          bgcolor: colors.dark, 
-                          width: 'fit-content', 
-                          px: 2, 
-                          py: 0.5, 
+                        <Box display="flex" alignItems="center" gap={1} sx={{
+                          color: colors.textSecondary,
+                          bgcolor: colors.dark,
+                          width: 'fit-content',
+                          px: 2,
+                          py: 0.5,
                           borderRadius: '20px',
                           border: `1px solid ${colors.darkTertiary}`
                         }}>
@@ -603,7 +608,7 @@ const Profile = () => {
           {userPosts.length > 0 ? (
             userPosts.map((post) => (
               <Grid item key={post._id} xs={12} sm={6} md={4}>
-                <Post post={post} setCurrentId={() => {}} />
+                <Post post={post} setCurrentId={() => { }} />
               </Grid>
             ))
           ) : (
@@ -659,7 +664,7 @@ const Profile = () => {
           >
             <CloseIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
           </IconButton>
-          
+
           {/* Image Title */}
           {modalImageTitle && (
             <Typography
@@ -682,7 +687,7 @@ const Profile = () => {
               {modalImageTitle}
             </Typography>
           )}
-          
+
           {/* Full Size Image */}
           <img
             src={modalImageSrc}
