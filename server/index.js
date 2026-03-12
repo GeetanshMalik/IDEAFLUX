@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Server } from "socket.io";
+import { Server } from "socket.io"; 
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
@@ -22,20 +22,15 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// Trust proxy - required for Heroku/reverse proxy to work with rate limiting
-app.set('trust proxy', 1);
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: {
     error: 'Too many requests from this IP, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+  }
 });
-app.use('/user', limiter); // Apply rate limiting to user routes
+app.use('/user', limiter); // Apply rate limiting to auth routes
 
 // CORS configuration
 const corsOptions = {
@@ -61,7 +56,7 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 
 // Root route for Heroku health check
 app.get('/', (req, res) => {
-  res.status(200).json({
+  res.status(200).json({ 
     message: 'IdeaFlux Backend is running!',
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -71,8 +66,8 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
+  res.status(200).json({ 
+    status: 'OK', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
@@ -81,7 +76,7 @@ app.get('/health', (req, res) => {
 // Test endpoint to verify frontend-backend connection
 app.get('/test', (req, res) => {
   console.log('🧪 Test endpoint hit from:', req.ip);
-  res.status(200).json({
+  res.status(200).json({ 
     message: 'Backend is working!',
     timestamp: new Date().toISOString(),
     ip: req.ip
@@ -91,7 +86,7 @@ app.get('/test', (req, res) => {
 // Test socket connection endpoint
 app.get('/test-socket', (req, res) => {
   console.log('🔌 Socket test endpoint hit');
-  res.status(200).json({
+  res.status(200).json({ 
     message: 'Socket server is running',
     connectedClients: global.io ? global.io.engine.clientsCount : 0,
     timestamp: new Date().toISOString()
@@ -104,14 +99,14 @@ app.get('/test-posts', async (req, res) => {
     // Import Post model dynamically to avoid circular imports
     const { default: Post } = await import('./model/post.js');
     const posts = await Post.find().limit(5).sort({ createdAt: -1 });
-    res.status(200).json({
+    res.status(200).json({ 
       message: 'Posts test endpoint',
       totalPosts: posts.length,
       recentPosts: posts.map(p => ({ id: p._id, title: p.title, creator: p.creator })),
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(500).json({ 
       error: 'Posts test failed',
       message: error.message,
       timestamp: new Date().toISOString()
@@ -136,7 +131,7 @@ app.post('/test-notification', (req, res) => {
       read: false,
       createdAt: new Date()
     };
-
+    
     global.io.to(userId).emit('notification received', testNotification);
     console.log('🧪 Test notification sent to:', userId);
     res.json({ success: true, message: 'Test notification sent' });
@@ -233,7 +228,7 @@ connectDB().then(() => {
             read: false,
             createdAt: new Date()
           };
-
+          
           socket.in(user._id).emit("notification received", notification);
           console.log(`🔔 Message notification sent to user ${user._id}`);
         });
