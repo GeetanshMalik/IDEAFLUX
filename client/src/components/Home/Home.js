@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Grow, Box, Button, Typography } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { getPosts } from '../../actions/posts';
 import Posts from '../Posts/Posts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -29,6 +29,7 @@ const Home = () => {
   // Load posts when tab changes - immediate load
   useEffect(() => {
     refreshPosts(activeTab, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   // Auto-refresh trending posts every 30 seconds

@@ -454,7 +454,7 @@ const Navbar = () => {
           {/* Full Size Image */}
           <img
             src={modalImageSrc}
-            alt={`${user?.result?.name}'s Profile Picture`}
+            alt={`${user?.result?.name}'s Profile`}
             style={{
               width: '100%',
               height: '100%',
