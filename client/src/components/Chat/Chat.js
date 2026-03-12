@@ -70,6 +70,7 @@ const Chat = () => {
     if (chats.length > 0 && !selectedChat) {
       setSelectedChat(chats[0]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chats.length, selectedChat]);
 
   if (loading) {

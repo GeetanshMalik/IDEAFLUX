@@ -6,7 +6,7 @@ import { GoogleLogin } from '@react-oauth/google'; // NEW LIBRARY
 import { jwtDecode } from 'jwt-decode'; // TO DECODE TOKEN
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Input from './Input';
-import { signin, signup } from '../../actions/auth';
+import { signin } from '../../actions/auth';
 import * as api from '../../api';
 import { useLanguage } from '../../context/LanguageProvider';
 import { sendOTPEmailFallback } from '../../utils/emailService';

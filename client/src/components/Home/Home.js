@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Grow, Grid, Box, Button, Typography } from '@mui/material';
+import { Container, Grow, Box, Button, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { getPosts } from '../../actions/posts';
 import Posts from '../Posts/Posts';
@@ -13,10 +13,8 @@ import { colors, commonStyles } from '../../theme/globalTheme';
 const Home = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('recent');
-  const [currentId, setCurrentId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
-  const { posts, isLoading } = useSelector((state) => state.posts);
 
   // Memoized refresh function
   const refreshPosts = useCallback(async (tab = activeTab, showLoader = false) => {
@@ -152,7 +150,7 @@ const Home = () => {
 
         <Grow in>
           <Box sx={{ width: '100%' }}>
-            <Posts setCurrentId={setCurrentId} />
+            <Posts />
           </Box>
         </Grow>
       </Container>
