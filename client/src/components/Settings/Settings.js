@@ -82,21 +82,14 @@ const Settings = () => {
 
   const handleSaveSettings = async () => {
     setLoading(true);
-    console.log('🔧 handleSaveSettings called');
-    console.log('🔧 Current settings state:', JSON.stringify(settings));
-    console.log('🔧 Current userInfo:', JSON.stringify(userInfo));
     try {
       const payload = {
         settings,
         name: userInfo.name,
       };
-      console.log('🔧 Sending payload to API:', JSON.stringify(payload));
 
       const response = await api.updateUserSettings(payload);
       const { data } = response;
-
-      console.log('🔧 API response status:', response.status);
-      console.log('🔧 API response data:', JSON.stringify(data));
 
       // Update localStorage profile with new name
       if (data.name && user) {
@@ -109,16 +102,12 @@ const Settings = () => {
 
       // Sync settings state from server response to confirm what was saved
       if (data.settings) {
-        console.log('🔧 Settings from server after save:', JSON.stringify(data.settings));
         setSettings(data.settings);
-      } else {
-        console.warn('⚠️ Server response had no settings field:', JSON.stringify(data));
       }
 
       showSuccess(t('settingsSavedSuccessfully'));
     } catch (error) {
-      console.error('❌ Save settings error:', error);
-      console.error('❌ Error details:', error.message, error.response?.status, error.response?.data);
+      console.error('Save settings error:', error);
       showError(error.message || t('failedToSaveSettings'));
     } finally {
       setLoading(false);
