@@ -597,16 +597,24 @@ export const updateUserSettings = async (req, res) => {
 
     const { settings, name } = req.body;
 
+    console.log('📝 updateUserSettings called for user:', req.userId);
+    console.log('📝 Received settings:', JSON.stringify(settings));
+    console.log('📝 Received name:', name);
+
     const updateData = {};
 
-    // Update settings if provided
+    // Update settings if provided — set entire subdocument at once
     if (settings) {
       const allowedKeys = ['allowMessages', 'likesNotif', 'commentsNotif', 'followsNotif', 'mentionsNotif'];
+      const sanitizedSettings = {};
       for (const key of allowedKeys) {
         if (typeof settings[key] === 'boolean') {
-          updateData[`settings.${key}`] = settings[key];
+          sanitizedSettings[key] = settings[key];
         }
       }
+      // Set the entire settings object instead of using dot notation
+      // Dot notation ($set with 'settings.key') can be silently stripped by Mongoose strict mode
+      updateData.settings = sanitizedSettings;
     }
 
     // Update display name if provided
@@ -614,13 +622,17 @@ export const updateUserSettings = async (req, res) => {
       updateData.name = name.trim();
     }
 
+    console.log('📝 Update data to save:', JSON.stringify(updateData));
+
     const updatedUser = await User.findByIdAndUpdate(
       req.userId,
       { $set: updateData },
-      { new: true }
+      { new: true, runValidators: true }
     ).select('settings name');
 
     if (!updatedUser) return res.status(404).json({ message: "User not found" });
+
+    console.log('✅ Settings saved for user:', req.userId, '→', JSON.stringify(updatedUser.settings));
 
     res.status(200).json({
       settings: updatedUser.settings,
