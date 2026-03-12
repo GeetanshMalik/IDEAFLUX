@@ -97,10 +97,16 @@ const Settings = () => {
         localStorage.setItem('profile', JSON.stringify(updatedProfile));
       }
 
+      // Sync settings state from server response to confirm what was saved
+      if (data.settings) {
+        setSettings(data.settings);
+      }
+
       showSuccess(t('settingsSavedSuccessfully'));
     } catch (error) {
       console.error('Save settings error:', error);
-      showError(error.response?.data?.message || t('failedToSaveSettings'));
+      // Use error.message — Axios interceptor already extracts server message into it
+      showError(error.message || t('failedToSaveSettings'));
     } finally {
       setLoading(false);
     }
